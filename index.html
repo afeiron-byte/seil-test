@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>생각의 지도 큐레이팅 포트폴리오</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      /* 인쇄 시 첫 페이지 백지 현상 해결을 위한 완벽한 CSS 처리 */
+      body > *:not(#print-modal) { display: none !important; }
+      
+      html, body {
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+      }
+
+      #print-modal { 
+        display: block !important; 
+        position: relative !important; 
+        inset: auto !important;
+        width: 100% !important; 
+        height: auto !important; 
+        overflow: visible !important; 
+        background: white !important;
+      }
+      
+      .no-print { display: none !important; }
+      .page-break { page-break-after: always; }
+      input, select, textarea { 
+        border: 1px solid #ddd !important; 
+        background: transparent !important; 
+        color: black !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHeHYv058AhEQYlj8I6jWVFRaBoeOvupxn6TJ_nKKeriaZpq0ais5t6xuPWcYWuLejTw/exec";
+  
+  let currentUser = null;
+  let currentData = getEmptyData();
+
+  function getEmptyData() {
+    return {
+      basic: {}, academic: { curriculum: [], mockExams: [], grades: { notes: '' } }, 
+      career: { exploration: [], selfDirected: [] }, 
+      community: { items: [] }, 
+      reading: []
+    };
+  }
+
+  const curriculumMap = {
+    "문학": "일반선택", "독서": "일반선택", "화법과언어": "일반선택", "심화국어": "진로선택",
+    "대수": "일반선택", "미적분I": "일반선택", "확률과통계": "일반선택", "미적분II": "진로선택", "기하": "진로선택",
+    "영어I": "일반선택", "영어II": "일반선택", "영어독해와작문": "일반선택", "영미문학읽기": "진로선택",
+    "한국지리": "일반선택", "세계사": "일반선택", "물리학": "일반선택", "화학": "일반선택", "생명과학": "일반선택",
+    "물리학II": "진로선택", "화학II": "진로선택", "수학과문화": "융합선택", "실생활과통계": "융합선택"
+  };
+
+  const mockExamRows = [
+    { year: '1학년', month: '3월' }, { year: '1학년', month: '6월' }, { year: '1학년', month: '9월' }, { year: '1학년', month: '10월' }, { year: '1학년', month: '11월' },
+    { year: '2학년', month: '3월' }, { year: '2학년', month: '6월' }, { year: '2학년', month: '9월' }, { year: '2학년', month: '10월' }, { year: '2학년', month: '11월' },
+    { year: '3학년', month: '3월' }, { year: '3학년', month: '6월' }, { year: '3학년', month: '9월' }, { year: '3학년', month: '10월' }, { year: '3학년', month: '11월' }
+  ];
+
+  const initialCommunityItems = [
+    { category: '리더십', subCategory: '임원 활동' },
+    { category: '리더십', subCategory: '협업 활동' },
+    { category: '자기관리', subCategory: '학업 성장' },
+    { category: '자기관리', subCategory: '생활 습관' },
+    { category: '자기관리', subCategory: '문제 해결' },
+    { category: '봉사정신', subCategory: '학급 역할' },
+    { category: '봉사정신', subCategory: '멘토링' },
+    { category: '봉사정신', subCategory: '또래상담' },
+    { category: '봉사정신', subCategory: '기타' },
+    { category: '관계지향', subCategory: '교우 관계' },
+    { category: '관계지향', subCategory: '갈등 관리' },
+    { category: '관계지향', subCategory: '행사 참여' }
+  ];
+
+  async function login() {
+    const id = document.getElementById('login-id').value.trim();
+    const pw = document.getElementById('login-pw').value.trim();
+
+    if(!id || !pw) {
+      alert("ID와 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    if (!isNaN(id) && (id.length !== 6 || id[2] !== '0')) {
+      alert("학번은 입학년도(2)+0+반(1)+번호(2) 형식의 6자리 숫자여야 합니다. (예: 260101)");
+      return;
+    }
+
+    showLoading(true);
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST', body: JSON.stringify({ action: 'login', id: id, pw: pw })
+      });
+      const result = await response.json();
+      
+      if(result.success) {
+        if(result.role === 'teacher') {
+          currentUser = { role: 'teacher' };
+          await fetchAllStudents();
+          document.getElementById('login-screen').classList.add('hidden');
+          document.getElementById('teacher-screen').classList.remove('hidden');
+        } else {
+          currentUser = { role: 'student', id: id, pw: pw };
+          if(result.data) mergeData(result.data);
+          renderStudentUI();
+          document.getElementById('login-screen').classList.add('hidden');
+          document.getElementById('student-screen').classList.remove('hidden');
+        }
+      } else {
+        alert(result.message);
+      }
+    } catch(e) {
+      alert("서버 통신 오류: " + e.message);
+    }
+    showLoading(false);
+  }
+
+  function mergeData(serverData) {
+    if(serverData.basic) currentData.basic = { ...currentData.basic, ...serverData.basic };
+    
+    if(serverData.academic) currentData.academic = { ...currentData.academic, ...serverData.academic };
+    if(!Array.isArray(currentData.academic.curriculum)) currentData.academic.curriculum = [];
+    if(typeof currentData.academic.grades !== 'object') currentData.academic.grades = { notes: '' };
+    if(!Array.isArray(currentData.academic.mockExams) || currentData.academic.mockExams.length === 0) {
+      currentData.academic.mockExams = mockExamRows.map(r => ({...r}));
+    }
+    
+    if(serverData.career) currentData.career = { ...currentData.career, ...serverData.career };
+    if(!Array.isArray(currentData.career.exploration)) currentData.career.exploration = [];
+    if(!Array.isArray(currentData.career.selfDirected)) currentData.career.selfDirected = [];
+    
+    if(serverData.community) currentData.community = { ...currentData.community, ...serverData.community };
+    if(!Array.isArray(currentData.community.items) || currentData.community.items.length === 0 || !currentData.community.items[0].subCategory) {
+      currentData.community.items = initialCommunityItems.map(r => ({...r}));
+    }
+    
+    if(Array.isArray(serverData.reading)) currentData.reading = serverData.reading;
+    if(!Array.isArray(currentData.reading) || currentData.reading.length === 0) {
+      currentData.reading = [{},{},{}];
+    }
+  }
+
+  async function saveData(isTeacherMode = false, studentId = null) {
+    showLoading(true);
+    const payload = {
+      action: 'saveData',
+      id: isTeacherMode ? studentId : currentUser.id,
+      pw: isTeacherMode ? "" : currentUser.pw, 
+      basic: currentData.basic,
+      academic: currentData.academic,
+      career: currentData.career,
+      community: currentData.community,
+      reading: currentData.reading
+    };
+
+    try {
+      const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+      const result = await response.json();
+      alert(result.message);
+    } catch(e) {
+      alert("저장 중 오류가 발생했습니다.");
+    }
+    showLoading(false);
+  }
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('bg-blue-600', 'text-white'));
+    document.getElementById(tabId).style.display = 'block';
+    event.currentTarget.classList.add('bg-blue-600', 'text-white');
+  }
+
+  function addRow(section, category, maxLimit = 30) {
+    let arr = category ? currentData[section][category] : currentData[section];
+    if (arr.length >= maxLimit) {
+      alert(`최대 ${maxLimit}개까지만 입력할 수 있습니다.`);
+      return;
+    }
+    arr.push({});
+    renderStudentUI();
+  }
+
+  function deleteRow(section, category, index) {
+    let arr = category ? currentData[section][category] : currentData[section];
+    arr.splice(index, 1);
+    renderStudentUI();
+  }
+
+  function updateArray(section, category, index, field, value) {
+    if(category) currentData[section][category][index][field] = value;
+    else currentData[section][index][field] = value;
+
+    if (section === 'academic' && category === 'curriculum' && field === 'subject') {
+      const autoCat = curriculumMap[value.trim()];
+      if(autoCat) {
+        currentData[section][category][index]['type'] = autoCat;
+        renderStudentUI(); 
+      }
+    }
+  }
+
+  function updateBasicInfo(field, value) { currentData.basic[field] = value; }
+  
+  function updateGrades(semester, field, value) {
+    if(!currentData.academic.grades[semester]) currentData.academic.grades[semester] = {};
+    currentData.academic.grades[semester][field] = value;
+  }
+  function updateGradeNotes(value) {
+    if(!currentData.academic.grades) currentData.academic.grades = {};
+    currentData.academic.grades.notes = value;
+  }
+
+  function renderStudentUI() {
+    document.getElementById('b-name').value = currentData.basic.name || '';
+    document.getElementById('b-career').value = currentData.basic.career || '';
+    document.getElementById('b-uni').value = currentData.basic.university || '';
+    document.getElementById('b-major').value = currentData.basic.major || '';
+    document.getElementById('b-club1').value = currentData.basic.club1 || '';
+    document.getElementById('b-club2').value = currentData.basic.club2 || '';
+    document.getElementById('b-club3').value = currentData.basic.club3 || '';
+    document.getElementById('b-phone').value = currentData.basic.phone || '';
+
+    const gradeRows = ['1-1', '1-2', '2-1', '2-2', '3-1', '현재 기준 교과 성적'];
+    let gradeHtml = '';
+    gradeRows.forEach(row => {
+      const g5 = currentData.academic.grades[row] ? (currentData.academic.grades[row]['g5'] || '') : '';
+      const g9 = currentData.academic.grades[row] ? (currentData.academic.grades[row]['g9'] || '') : '';
+      const comp = currentData.academic.grades[row] ? (currentData.academic.grades[row]['comp'] || '') : '';
+      gradeHtml += `<tr>
+        <td class="border p-2 text-center bg-gray-50 font-bold">${row}</td>
+        <td class="border p-0"><input type="text" value="${g5}" onchange="updateGrades('${row}','g5',this.value)" class="w-full h-full p-2 text-center outline-none"></td>
+        <td class="border p-0"><input type="text" value="${g9}" onchange="updateGrades('${row}','g9',this.value)" class="w-full h-full p-2 text-center outline-none"></td>
+        ${row === '1-1' ? `<td rowspan="6" class="border p-0"><textarea class="w-full h-full p-2 outline-none resize-none" onchange="updateGrades('all','comp',this.value)">${currentData.academic.grades['all']?.comp || ''}</textarea></td>` : ''}
+      </tr>`;
+    });
+    document.getElementById('grade-tbody').innerHTML = gradeHtml;
+    document.getElementById('grade-notes').value = currentData.academic.grades.notes || '';
+
+    if(!Array.isArray(currentData.academic.mockExams) || currentData.academic.mockExams.length === 0) {
+      currentData.academic.mockExams = mockExamRows.map(r => ({...r}));
+    }
+    let mockHtml = '';
+    currentData.academic.mockExams.forEach((exam, i) => {
+      mockHtml += `<tr>
+        ${i % 5 === 0 ? `<td rowspan="5" class="border p-1 text-center font-bold bg-gray-50 w-16">${exam.year}</td>` : ''}
+        <td class="border p-1 text-center bg-gray-50 w-16">${exam.month}</td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.korP||''}" onchange="updateArray('academic','mockExams',${i},'korP',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.korG||''}" onchange="updateArray('academic','mockExams',${i},'korG',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.mathP||''}" onchange="updateArray('academic','mockExams',${i},'mathP',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.mathG||''}" onchange="updateArray('academic','mockExams',${i},'mathG',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.engP||''}" onchange="updateArray('academic','mockExams',${i},'engP',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.engG||''}" onchange="updateArray('academic','mockExams',${i},'engG',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.socP||''}" onchange="updateArray('academic','mockExams',${i},'socP',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.socG||''}" onchange="updateArray('academic','mockExams',${i},'socG',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.sciP||''}" onchange="updateArray('academic','mockExams',${i},'sciP',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.sciG||''}" onchange="updateArray('academic','mockExams',${i},'sciG',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-sm outline-none" value="${exam.avgPercentile||''}" onchange="updateArray('academic','mockExams',${i},'avgPercentile',this.value)"></td>
+        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-sm outline-none" value="${exam.avgGrade||''}" onchange="updateArray('academic','mockExams',${i},'avgGrade',this.value)"></td>
+      </tr>`;
+    });
+    document.getElementById('mock-exam-tbody').innerHTML = mockHtml;
+
+    renderList('curriculum-list', currentData.academic.curriculum, 
+      (item, i) => `
+      <div class="flex gap-2 mb-2 items-center">
+        <input type="text" placeholder="이수학기(1-1)" value="${item.semester||''}" onchange="updateArray('academic','curriculum',${i},'semester',this.value)" class="border p-2 w-24 rounded text-sm">
+        <input type="text" placeholder="과목명" value="${item.subject||''}" onchange="updateArray('academic','curriculum',${i},'subject',this.value)" class="border p-2 flex-1 rounded text-sm">
+        <input type="text" placeholder="등급" value="${item.grade||''}" onchange="updateArray('academic','curriculum',${i},'grade',this.value)" class="border p-2 w-16 rounded text-sm text-center">
+        <input type="text" placeholder="성취도" value="${item.achieve||''}" onchange="updateArray('academic','curriculum',${i},'achieve',this.value)" class="border p-2 w-16 rounded text-sm text-center">
+        <select onchange="updateArray('academic','curriculum',${i},'type',this.value)" class="border p-2 w-40 bg-gray-50 rounded text-sm">
+          <option value="">구분선택</option>
+          <option value="일반선택" ${item.type==='일반선택'?'selected':''}>일반선택</option>
+          <option value="진로선택" ${item.type==='진로선택'?'selected':''}>진로선택</option>
+          <option value="융합선택" ${item.type==='융합선택'?'selected':''}>융합선택</option>
+          <option value="공동교육과정" ${item.type==='공동교육과정'?'selected':''}>공동교육과정</option>
+          <option value="시교육청프로그램" ${item.type==='시교육청프로그램'?'selected':''}>시교육청프로그램</option>
+        </select>
+        <button onclick="deleteRow('academic','curriculum',${i})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">X</button>
+      </div>`);
+
+    renderList('exploration-list', currentData.career.exploration, 
+      (item, i) => `
+      <div class="grid grid-cols-12 gap-2 mb-2 p-2 border bg-white rounded items-center shadow-sm text-sm">
+        <select onchange="updateArray('career','exploration',${i},'type',this.value)" class="col-span-2 border p-1 rounded">
+          <option value="전공탐색" ${item.type==='전공탐색'?'selected':''}>전공탐색</option>
+          <option value="진로체험" ${item.type==='진로체험'?'selected':''}>진로체험</option>
+        </select>
+        <input type="text" placeholder="관심 분야" value="${item.interest||''}" onchange="updateArray('career','exploration',${i},'interest',this.value)" class="col-span-2 border p-1 rounded">
+        <input type="text" placeholder="활동명" value="${item.name||''}" onchange="updateArray('career','exploration',${i},'name',this.value)" class="col-span-2 border p-1 rounded">
+        <input type="text" placeholder="활동내용" value="${item.content||''}" onchange="updateArray('career','exploration',${i},'content',this.value)" class="col-span-3 border p-1 rounded">
+        <input type="text" placeholder="활동시기" value="${item.period||''}" onchange="updateArray('career','exploration',${i},'period',this.value)" class="col-span-1 border p-1 rounded text-center">
+        <select onchange="updateArray('career','exploration',${i},'area',this.value)" class="col-span-1 border p-1 rounded">
+          ${getRecordAreaOptions(item.area)}
+        </select>
+        <button onclick="deleteRow('career','exploration',${i})" class="col-span-1 bg-red-500 text-white p-1 rounded hover:bg-red-600 text-xs">삭제</button>
+      </div>`);
+
+    renderList('self-directed-list', currentData.career.selfDirected,
+      (item, i) => `
+      <div class="border p-4 mb-4 bg-white rounded shadow-sm relative text-sm">
+        <button onclick="deleteRow('career','selfDirected',${i})" class="absolute top-2 right-2 text-red-500 text-xs font-bold hover:underline">삭제</button>
+        <div class="grid grid-cols-3 gap-3 mb-3">
+          <div class="col-span-2"><label class="font-bold text-blue-800">탐구 주제</label><input type="text" value="${item.topic||''}" onchange="updateArray('career','selfDirected',${i},'topic',this.value)" class="w-full border p-1 rounded"></div>
+          <div><label class="font-bold text-blue-800">탐구 유형</label>
+            <select onchange="updateArray('career','selfDirected',${i},'type',this.value)" class="w-full border p-1 rounded">
+              <option value="">선택</option>
+              <option value="학술자료 조사/분석" ${item.type==='학술자료 조사/분석'?'selected':''}>학술자료 조사/분석</option>
+              <option value="실험/실습/제작" ${item.type==='실험/실습/제작'?'selected':''}>실험/실습/제작</option>
+              <option value="데이터분석/활용" ${item.type==='데이터분석/활용'?'selected':''}>데이터분석/활용</option>
+              <option value="융합/실천/사회확장" ${item.type==='융합/실천/사회확장'?'selected':''}>융합/실천/사회확장</option>
+            </select>
+          </div>
+          <div><label class="font-bold text-blue-800">교과 활동</label><input type="text" value="${item.subjectActivity||''}" onchange="updateArray('career','selfDirected',${i},'subjectActivity',this.value)" class="w-full border p-1 rounded"></div>
+          <div><label class="font-bold text-blue-800">관련 전공</label><input type="text" value="${item.major||''}" onchange="updateArray('career','selfDirected',${i},'major',this.value)" class="w-full border p-1 rounded"></div>
+          <div><label class="font-bold text-blue-800">활동 시기</label><input type="text" value="${item.period||''}" onchange="updateArray('career','selfDirected',${i},'period',this.value)" class="w-full border p-1 rounded"></div>
+        </div>
+        <div class="grid grid-cols-4 gap-2 mb-2">
+          <div><label class="text-xs font-bold text-gray-600">동기/문제인식</label><textarea onchange="updateArray('career','selfDirected',${i},'motive',this.value)" class="w-full border p-1 h-16 rounded">${item.motive||''}</textarea></div>
+          <div><label class="text-xs font-bold text-gray-600">해결방법</label><textarea onchange="updateArray('career','selfDirected',${i},'solution',this.value)" class="w-full border p-1 h-16 rounded">${item.solution||''}</textarea></div>
+          <div><label class="text-xs font-bold text-gray-600">결론도출</label><textarea onchange="updateArray('career','selfDirected',${i},'conclusion',this.value)" class="w-full border p-1 h-16 rounded">${item.conclusion||''}</textarea></div>
+          <div><label class="text-xs font-bold text-gray-600">성장 및 교훈</label><textarea onchange="updateArray('career','selfDirected',${i},'growth',this.value)" class="w-full border p-1 h-16 rounded">${item.growth||''}</textarea></div>
+        </div>
+        <div class="flex justify-between items-center">
+          <div class="flex-1 mr-4"><label class="text-xs font-bold text-gray-600">후속 활동</label><input type="text" value="${item.followUp||''}" onchange="updateArray('career','selfDirected',${i},'followUp',this.value)" class="w-full border p-1 rounded"></div>
+          <div><label class="text-sm font-bold mr-2">학생부 기재 영역:</label><select onchange="updateArray('career','selfDirected',${i},'area',this.value)" class="border p-1 text-sm rounded">${getRecordAreaOptions(item.area)}</select></div>
+        </div>
+      </div>`);
+
+    if(!Array.isArray(currentData.community.items) || currentData.community.items.length === 0 || !currentData.community.items[0].subCategory) {
+      currentData.community.items = initialCommunityItems.map(r => ({...r}));
+    }
+    let comHtml = '';
+    let lastCat = '';
+    currentData.community.items.forEach((item, i) => {
+      let rowSpan = currentData.community.items.filter(x => x.category === item.category).length;
+      comHtml += `<tr>
+        ${item.category !== lastCat ? `<td rowspan="${rowSpan}" class="border p-2 text-center font-bold bg-gray-50">${item.category}</td>` : ''}
+        <td class="border p-2 text-center bg-gray-50 text-sm">${item.subCategory}</td>
+        <td class="border p-0"><input type="text" class="w-full h-full p-2 text-sm outline-none" value="${item.role||''}" onchange="updateArray('community','items',${i},'role',this.value)"></td>
+        <td class="border p-0"><textarea class="w-full p-2 h-16 text-sm outline-none resize-none" onchange="updateArray('community','items',${i},'content',this.value)">${item.content||''}</textarea></td>
+        <td class="border p-0"><textarea class="w-full p-2 h-16 text-sm outline-none resize-none" onchange="updateArray('community','items',${i},'evaluation',this.value)">${item.evaluation||''}</textarea></td>
+        <td class="border p-0"><input type="text" class="w-full h-full p-2 text-center text-sm outline-none" value="${item.time||''}" onchange="updateArray('community','items',${i},'time',this.value)"></td>
+        <td class="border p-0 text-center"><select class="p-1 text-sm outline-none" onchange="updateArray('community','items',${i},'area',this.value)">${getRecordAreaOptions(item.area)}</select></td>
+      </tr>`;
+      lastCat = item.category;
+    });
+    document.getElementById('community-tbody').innerHTML = comHtml;
+
+    if(!Array.isArray(currentData.reading) || currentData.reading.length === 0) {
+      currentData.reading = [{},{},{}]; 
+    }
+    renderList('reading-list', currentData.reading,
+      (item, i) => `
+      <div class="flex gap-2 mb-2 items-center text-sm">
+        <input type="text" placeholder="도서명" value="${item.title||''}" onchange="updateArray('reading',null,${i},'title',this.value)" class="border p-2 w-1/5 rounded">
+        <input type="text" placeholder="저자" value="${item.author||''}" onchange="updateArray('reading',null,${i},'author',this.value)" class="border p-2 w-24 rounded">
+        <input type="text" placeholder="인상깊은 이유" value="${item.reason||''}" onchange="updateArray('reading',null,${i},'reason',this.value)" class="border p-2 flex-1 rounded">
+        <input type="text" placeholder="연계활동" value="${item.linkedActivity||''}" onchange="updateArray('reading',null,${i},'linkedActivity',this.value)" class="border p-2 flex-1 rounded">
+        <input type="text" placeholder="활동시기" value="${item.period||''}" onchange="updateArray('reading',null,${i},'period',this.value)" class="border p-2 w-20 text-center rounded">
+        <select onchange="updateArray('reading',null,${i},'area',this.value)" class="border p-2 w-20 rounded">${getRecordAreaOptions(item.area)}</select>
+        <button onclick="deleteRow('reading',null,${i})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">X</button>
+      </div>`);
+  }
+
+  function renderList(containerId, array, templateFn) {
+    document.getElementById(containerId).innerHTML = array.map((item, i) => templateFn(item, i)).join('');
+  }
+  function getRecordAreaOptions(selected) {
+    const opts = ['선택','자율','진로','동아리','과세특','기타'];
+    return opts.map(o => `<option value="${o}" ${selected===o?'selected':''}>${o}</option>`).join('');
+  }
+
+  function showLoading(show) {
+    document.getElementById('loading').style.display = show ? 'flex' : 'none';
+  }
+
+  let allStudentsData = [];
+  async function fetchAllStudents() {
+    const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllStudents' }) });
+    const result = await response.json();
+    allStudentsData = result.students || [];
+    renderTeacherTable();
+  }
+
+  function renderTeacherTable() {
+    const term = document.getElementById('search-input').value;
+    const filtered = allStudentsData.filter(s => s.id.includes(term) || (s.data.basic.name && s.data.basic.name.includes(term)));
+    
+    document.getElementById('teacher-tbody').innerHTML = filtered.map(s => `
+      <tr class="border-b hover:bg-blue-50 cursor-pointer" onclick="openStudentModal('${s.id}')">
+        <td class="p-3 text-center">${s.id}</td>
+        <td class="p-3 text-center font-bold">${s.data.basic.name || '-'}</td>
+        <td class="p-3 text-center">${s.data.basic.career || '-'}</td>
+        <td class="p-3 text-center"><button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold shadow-sm">상세보기</button></td>
+      </tr>
+    `).join('');
+  }
+
+  let viewingStudentId = null;
+  function openStudentModal(id) {
+    const student = allStudentsData.find(s => s.id === id);
+    if(!student) return;
+    viewingStudentId = id;
+    currentData = getEmptyData();
+    mergeData(student.data); 
+
+    document.getElementById('modal-title').innerText = `${currentData.basic.name || '이름미상'} (${id}) 포트폴리오`;
+    document.getElementById('m-teacher-notes').value = currentData.basic.teacherNotes || '';
+    
+    renderStudentUI(); 
+    
+    document.getElementById('print-modal').classList.remove('hidden');
+    const formContent = document.getElementById('reusable-form-content');
+    document.getElementById('modal-form-container').appendChild(formContent);
+    formContent.classList.remove('h-[75vh]', 'overflow-y-auto', 'bg-white', 'p-8');
+    
+    formContent.querySelectorAll('.tab-content').forEach(el => {
+      if(el.id === 'tab6') {
+        el.style.display = 'none';
+      } else {
+        el.style.display = 'block';
+      }
+    });
+  }
+
+  function closeStudentModal() {
+    document.getElementById('print-modal').classList.add('hidden');
+    viewingStudentId = null;
+    currentData = getEmptyData();
+    
+    const formContent = document.getElementById('reusable-form-content');
+    document.getElementById('student-form-mount').appendChild(formContent);
+    formContent.classList.add('h-[75vh]', 'overflow-y-auto', 'bg-white', 'p-8');
+    
+    switchTab('tab1');
+    document.getElementById('tab1-btn').click();
+  }
+
+  async function saveTeacherNotes() {
+    currentData.basic.teacherNotes = document.getElementById('m-teacher-notes').value;
+    await saveData(true, viewingStudentId);
+  }
+</script>
+
+<!-- 로딩 -->
+<div id="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="text-white text-xl font-bold">처리 중...</div>
+</div>
+
+<!-- 로그인 화면 -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50">
+  <div class="bg-white p-10 rounded-xl shadow-xl w-96 border border-gray-100">
+    <h1 class="text-2xl font-extrabold text-center mb-2 text-gray-900">생각의 지도 큐레이팅</h1>
+    <p class="text-center text-sm text-gray-500 mb-8">개인 맞춤형 포트폴리오 관리 시스템</p>
+    <div class="mb-5">
+      <label class="block text-sm font-bold mb-2 text-gray-700">ID (학번)</label>
+      <input type="text" id="login-id" class="w-full border border-gray-300 p-3 rounded-md outline-none" placeholder="260101 (교사는 교사ID 입력)">
+    </div>
+    <div class="mb-8">
+      <label class="block text-sm font-bold mb-2 text-gray-700">비밀번호</label>
+      <input type="password" id="login-pw" class="w-full border border-gray-300 p-3 rounded-md outline-none" placeholder="비밀번호 입력">
+    </div>
+    <button onclick="login()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700">로그인 및 시작하기</button>
+  </div>
+</div>
+
+<!-- 학생 화면 -->
+<div id="student-screen" class="hidden min-h-screen bg-gray-50 pt-6">
+  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl border border-gray-200 overflow-hidden">
+    <!-- 헤더 -->
+    <div class="flex justify-between items-center bg-blue-700 text-white p-5">
+      <h1 class="text-2xl font-extrabold flex items-center gap-2">나의 생각의 지도 포트폴리오</h1>
+      <div>
+        <button onclick="saveData()" class="bg-green-500 hover:bg-green-600 font-bold px-6 py-2 rounded-md mr-3">데이터 저장하기</button>
+        <button onclick="location.reload()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm">로그아웃</button>
+      </div>
+    </div>
+    
+    <!-- 탭 네비게이션 -->
+    <div class="flex border-b border-gray-200 text-sm font-bold bg-gray-100 overflow-x-auto no-print">
+      <button id="tab1-btn" onclick="switchTab('tab1')" class="tab-btn py-4 px-8 bg-blue-600 text-white whitespace-nowrap border-r border-gray-200">1. 기본인적사항</button>
+      <button onclick="switchTab('tab2')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">2. 학업역량</button>
+      <button onclick="switchTab('tab3')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">3. 진로역량</button>
+      <button onclick="switchTab('tab4')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">4. 공동체역량</button>
+      <button onclick="switchTab('tab5')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">5. 독서활동</button>
+      <button onclick="switchTab('tab6')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap">6. 참고자료</button>
+    </div>
+
+    <div id="student-form-mount">
+      <div id="reusable-form-content" class="p-8 h-[75vh] overflow-y-auto bg-white">
+        
+        <!-- 탭1: 기본인적사항 -->
+        <div id="tab1" class="tab-content" style="display:block;">
+          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800">1. 기본 인적 사항</h2>
+          <div class="border rounded-lg overflow-hidden">
+            <table class="w-full text-left border-collapse">
+              <tbody>
+                <tr class="border-b">
+                  <th class="bg-gray-50 p-4 border-r w-1/6 font-bold text-center">성명</th>
+                  <td class="p-0 border-r w-1/3"><input type="text" id="b-name" onchange="updateBasicInfo('name',this.value)" class="w-full h-full p-4 outline-none"></td>
+                  <th class="bg-gray-50 p-4 border-r w-1/6 font-bold text-center">연락처</th>
+                  <td class="p-0"><input type="text" id="b-phone" onchange="updateBasicInfo('phone',this.value)" class="w-full h-full p-4 outline-none"></td>
+                </tr>
+                <tr class="border-b">
+                  <th class="bg-gray-50 p-4 border-r font-bold text-center">진로희망</th>
+                  <td class="p-0 border-r" colspan="3"><input type="text" id="b-career" onchange="updateBasicInfo('career',this.value)" class="w-full h-full p-4 outline-none"></td>
+                </tr>
+                <tr class="border-b">
+                  <th class="bg-gray-50 p-4 border-r font-bold text-center">관심 대학</th>
+                  <td class="p-0 border-r"><input type="text" id="b-uni" onchange="updateBasicInfo('university',this.value)" class="w-full h-full p-4 outline-none"></td>
+                  <th class="bg-gray-50 p-4 border-r font-bold text-center">관심 학과</th>
+                  <td class="p-0"><input type="text" id="b-major" onchange="updateBasicInfo('major',this.value)" class="w-full h-full p-4 outline-none"></td>
+                </tr>
+                <tr>
+                  <th class="bg-gray-50 p-4 border-r font-bold text-center" rowspan="3">동아리</th>
+                  <th class="bg-gray-50 p-3 border-r border-b text-center text-sm w-24">1학년</th>
+                  <td class="p-0 border-b" colspan="2"><input type="text" id="b-club1" onchange="updateBasicInfo('club1',this.value)" class="w-full h-full p-3 outline-none"></td>
+                </tr>
+                <tr>
+                  <th class="bg-gray-50 p-3 border-r border-b text-center text-sm w-24">2학년</th>
+                  <td class="p-0 border-b" colspan="2"><input type="text" id="b-club2" onchange="updateBasicInfo('club2',this.value)" class="w-full h-full p-3 outline-none"></td>
+                </tr>
+                <tr>
+                  <th class="bg-gray-50 p-3 border-r text-center text-sm w-24">3학년</th>
+                  <td class="p-0" colspan="2"><input type="text" id="b-club3" onchange="updateBasicInfo('club3',this.value)" class="w-full h-full p-3 outline-none"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 탭2: 학업역량 -->
+        <div id="tab2" class="tab-content" style="display:none;">
+          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">2. 학업역량 관리</h2>
+          
+          <h3 class="text-lg font-bold mb-2 text-blue-800">내신 교과 성적 현황</h3>
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-100 border text-center">
+                <th class="border p-2">구분</th><th class="border p-2">5등급</th><th class="border p-2">9등급</th><th class="border p-2">종합</th>
+              </tr>
+            </thead>
+            <tbody id="grade-tbody"></tbody>
+          </table>
+          <div class="mb-10 border-x border-b p-2 bg-gray-50">
+            <span class="font-bold text-sm block mb-1">특기 사항</span>
+            <textarea id="grade-notes" class="w-full p-2 border outline-none h-16 resize-none" onchange="updateGradeNotes(this.value)"></textarea>
+          </div>
+
+          <h3 class="text-lg font-bold mb-2 text-blue-800">전국연합 학력평가 성적 현황</h3>
+          <table class="w-full border-collapse mb-10 text-sm">
+            <thead>
+              <tr class="bg-gray-100 border text-center">
+                <th class="border p-2 w-16" rowspan="2">학년</th>
+                <th class="border p-2 w-16" rowspan="2">구분</th>
+                <th class="border p-1" colspan="2">국어</th><th class="border p-1" colspan="2">수학</th><th class="border p-1" colspan="2">영어</th>
+                <th class="border p-1" colspan="2">사탐</th><th class="border p-1" colspan="2">과탐</th>
+                <th class="border p-2 w-12" rowspan="2">백분위<br>평균</th>
+                <th class="border p-2 w-12" rowspan="2">등급<br>평균</th>
+              </tr>
+              <tr class="bg-gray-100 border text-center text-xs">
+                <th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th><th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th>
+                <th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th><th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th>
+                <th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th>
+              </tr>
+            </thead>
+            <tbody id="mock-exam-tbody"></tbody>
+          </table>
+
+          <h3 class="text-lg font-bold mb-2 text-blue-800">교육과정 이수 현황 (2022 개정)</h3>
+          <div id="curriculum-list"></div>
+          <button onclick="addRow('academic', 'curriculum')" class="no-print mt-3 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 이수 과목 추가</button>
+        </div>
+
+        <!-- 탭3: 진로역량 -->
+        <div id="tab3" class="tab-content" style="display:none;">
+          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">3. 진로역량 관리</h2>
+          
+          <h3 class="text-lg font-bold mb-3 text-blue-800 bg-blue-50 p-2 rounded">3-1. 진로탐색활동 (전공탐색/진로체험)</h3>
+          <div id="exploration-list"></div>
+          <button onclick="addRow('career', 'exploration', 15)" class="no-print mb-10 mt-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 활동 추가</button>
+
+          <h3 class="text-lg font-bold mb-3 text-blue-800 bg-blue-50 p-2 rounded">3-2. 자기주도적 탐구활동</h3>
+          <p class="text-sm text-gray-500 mb-4 no-print">* 탐구유형: 학술자료조사 / 실험·실습 / 데이터분석 / 융합·실천</p>
+          <div id="self-directed-list"></div>
+          <button onclick="addRow('career', 'selfDirected', 15)" class="no-print mt-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 탐구활동 추가</button>
+        </div>
+
+        <!-- 탭4: 공동체역량 -->
+        <div id="tab4" class="tab-content" style="display:none;">
+          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">4. 공동체역량 관리</h2>
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-100 border">
+                <th class="border p-2 w-20">구분</th>
+                <th class="border p-2 w-24">하위 항목</th>
+                <th class="border p-2 w-1/6">본인의 주도적 역할</th>
+                <th class="border p-2 w-1/4">구체적인 활동 내용</th>
+                <th class="border p-2 w-1/4">역량 평가 (성장/교훈)</th>
+                <th class="border p-2 w-20">활동 시기</th>
+                <th class="border p-2 w-24">기재 영역</th>
+              </tr>
+            </thead>
+            <tbody id="community-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- 탭5: 독서활동 -->
+        <div id="tab5" class="tab-content" style="display:none;">
+          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">5. 독서활동상황 관리</h2>
+          <div id="reading-list"></div>
+          <button onclick="addRow('reading', null, 30)" class="no-print mt-4 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 독서 기록 추가</button>
+        </div>
+
+        <!-- 탭6: 참고자료 -->
+        <div id="tab6" class="tab-content no-print" style="display:none;">
+          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">6. 참고용 자료 (탐구활동 분류 가이드)</h2>
+          
+          <h3 class="font-bold text-lg mb-3 mt-6">■ 학생부 탐구활동 관리표 (추천 분류)</h3>
+          <table class="w-full border-collapse mb-8 text-sm text-left shadow-sm">
+            <thead>
+              <tr class="bg-blue-800 text-white border"><th class="border p-3 w-1/4">탐구유형</th><th class="border p-3">주요 활동</th><th class="border p-3">학생부 사례</th><th class="border p-3">대학이 높게 평가하는 요소</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">① 학술자료 조사·분석형</td><td class="border p-3 bg-white">논문, 학술자료, 통계자료, 도서 등을 활용하여 탐구</td><td class="border p-3 bg-white">교과 탐구보고서, 독서 연계 탐구, 사회문화 조사, 역사 탐구</td><td class="border p-3 bg-white">자료의 신뢰성, 다양한 출처 활용, 비판적 분석</td></tr>
+              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">② 실험·실습·제작형</td><td class="border p-3 bg-white">실험, 프로그래밍, 제작, 설계, 모델링</td><td class="border p-3 bg-white">과학 실험, 공학 설계, 메이커 활동, 코딩 프로젝트</td><td class="border p-3 bg-white">문제 해결 과정, 시행착오, 결과 분석</td></tr>
+              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">③ 현장조사 데이터 분석형</td><td class="border p-3 bg-white">설문조사, 인터뷰, 관찰, 빅데이터 분석</td><td class="border p-3 bg-white">사회문제 조사, 지역사회 프로젝트, 경제 통계 분석</td><td class="border p-3 bg-white">연구 설계, 데이터 해석 능력</td></tr>
+              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">④ 융합·실천·확장형</td><td class="border p-3 bg-white">탐구 결과를 실제 문제 해결이나 캠페인, 교육자료 제작 등으로 연결</td><td class="border p-3 bg-white">학급특색사업, 정책 제안, 캠페인, 교육 콘텐츠 제작</td><td class="border p-3 bg-white">탐구의 확장성, 사회적 가치, 실전성</td></tr>
+            </tbody>
+          </table>
+
+          <h3 class="font-bold text-lg mb-3 mt-8">■ 탐구활동 유형별 키워드 및 대표 전공</h3>
+          <div class="grid grid-cols-2 gap-6">
+            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
+              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">① 학술자료 조사·분석형</div>
+              <div class="p-5 text-sm text-gray-700 leading-relaxed">
+                <b class="text-blue-800">대표 키워드:</b> 논문 분석, 선행연구 조사, 문헌 연구, 독서 연계, 통계자료 분석, 기사 분석, 역사자료 분석<br><br>
+                <b class="text-blue-800">대표 전공:</b> 인문, 사회, 경영, 경제, 법학
+              </div>
+            </div>
+            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
+              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">② 실험·실습·제작형</div>
+              <div class="p-5 text-sm text-gray-700 leading-relaxed">
+                <b class="text-blue-800">대표 키워드:</b> 실험설계, 변수통제, 제작, 프로그래밍, 모델링, 공학설계, 시뮬레이션, AI, 발명<br><br>
+                <b class="text-blue-800">대표 전공:</b> 자연과학, 공학, 의학, ICT
+              </div>
+            </div>
+            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
+              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">③ 현장조사 데이터 분석형</div>
+              <div class="p-5 text-sm text-gray-700 leading-relaxed">
+                <b class="text-blue-800">대표 키워드:</b> 설문조사, 인터뷰, 현장답사, 관찰, GIS, 공공데이터 분석, 빅데이터 분석, 통계, 사례연구<br><br>
+                <b class="text-blue-800">대표 전공:</b> 사회과학, 행정, 심리, 도시, 환경
+              </div>
+            </div>
+            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
+              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">④ 융합·실천·확장형</div>
+              <div class="p-5 text-sm text-gray-700 leading-relaxed">
+                <b class="text-blue-800">대표 키워드:</b> 캠페인, 정책제안, 교육자료 제작, 봉사 연계, 창업 아이디어, 지역사회 연계 프로젝트, 콘텐츠 제작, 전시회<br><br>
+                <b class="text-blue-800">대표 전공:</b> 교육, 미디어, 디자인, 경영, 융합학문
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 교사 화면 -->
+<div id="teacher-screen" class="hidden min-h-screen bg-gray-200 p-8">
+  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-8">
+    <div class="flex justify-between items-center mb-8 border-b pb-4">
+      <h1 class="text-3xl font-extrabold text-blue-900 flex items-center gap-3">교사 대시보드 (전체 학생 목록)</h1>
+      <button onclick="location.reload()" class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-md font-bold">로그아웃</button>
+    </div>
+    
+    <div class="mb-6 flex gap-4">
+      <input type="text" id="search-input" onkeyup="renderTeacherTable()" placeholder="이름 또는 학번으로 학생 검색..." class="border border-gray-300 p-3 rounded-md w-1/3 outline-none">
+    </div>
+
+    <div class="bg-white rounded-lg border overflow-hidden">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-blue-50 border-b">
+            <th class="p-4 font-bold text-center text-blue-900">학번</th>
+            <th class="p-4 font-bold text-center text-blue-900">이름</th>
+            <th class="p-4 font-bold text-center text-blue-900">희망진로</th>
+            <th class="p-4 font-bold text-center text-blue-900">포트폴리오 관리</th>
+          </tr>
+        </thead>
+        <tbody id="teacher-tbody" class="divide-y divide-gray-200"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 교사용 학생 상세 조회 모달 -->
+<div id="print-modal" class="hidden fixed inset-0 bg-white z-40 overflow-y-auto pb-20">
+  <div class="no-print bg-blue-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+    <h2 id="modal-title" class="text-xl font-bold">학생 포트폴리오</h2>
+    <div>
+      <button onclick="window.print()" class="bg-indigo-500 hover:bg-indigo-600 px-5 py-2 rounded font-bold mr-3">인쇄하기(PDF)</button>
+      <button onclick="saveTeacherNotes()" class="bg-green-500 hover:bg-green-600 px-5 py-2 rounded font-bold mr-3">특이사항 및 수정내용 저장</button>
+      <button onclick="closeStudentModal()" class="bg-red-500 hover:bg-red-600 px-5 py-2 rounded font-bold">닫기</button>
+    </div>
+  </div>
+  
+  <div class="p-10 max-w-5xl mx-auto relative print-container">
+    
+    <!-- 가장 처음에 타이틀 노출 -->
+    <div class="text-center font-extrabold text-3xl mb-12 text-black">생각의 지도 큐레이팅 포트폴리오</div>
+    
+    <div id="modal-form-container"></div>
+    
+    <!-- 기존에 맨 위에 있던 특이사항 영역을 폼 데이터 출력 후 가장 마지막에 위치시킴 -->
+    <div class="mt-12 border-2 border-red-200 p-5 bg-red-50 rounded-lg print:border-gray-400 print:bg-transparent">
+      <h3 class="font-bold text-red-700 mb-2 print:text-black">특이사항 (교사 전용 기재란)</h3>
+      <textarea id="m-teacher-notes" placeholder="학생부 반영용 특이사항 등을 자유롭게 기재하세요." class="w-full p-3 border border-red-200 rounded h-32 outline-none bg-white print:border-none print:p-0 print:overflow-hidden print:resize-none"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- 우측 하단 세일고 로고 -->
+<div class="fixed bottom-5 right-6 flex items-center gap-2 z-40 no-print bg-white/90 px-4 py-2 rounded-full shadow-md backdrop-blur-sm border border-gray-200">
+  <img src="세일고CI-01.png" alt="세일고 로고" class="w-6 h-6 object-contain">
+  <span class="font-bold text-sm" style="color: #b42814;">세일고등학교</span>
+</div>
+
+</body>
+</html>
