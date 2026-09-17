@@ -1,774 +1,811 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>생각의 지도 큐레이팅 포트폴리오</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @media print {
-      body > *:not(#print-modal) { display: none !important; }
-      
-      html, body {
-        height: auto !important;
-        overflow: visible !important;
-        background: white !important;
-      }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>지구시스템과학 지진파 탐구 실험실</title>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-      #print-modal { 
-        display: block !important; 
-        position: relative !important; 
-        inset: auto !important;
-        width: 100% !important; 
-        height: auto !important; 
-        overflow: visible !important; 
-        background: white !important;
-      }
-      
-      .no-print { display: none !important; }
-      .page-break { page-break-after: always; }
-      input, select, textarea { 
-        border: 1px solid #ddd !important; 
-        background: transparent !important; 
-        color: black !important;
-      }
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- html2canvas & html2pdf (PDF 렌더링 라이브러리) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --accent: #dc2626;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
     }
-    /* 자동 높이 조절 텍스트 영역을 위한 기본 스타일 */
-    .auto-resize {
-      overflow: hidden;
-      resize: none;
-      min-height: 38px;
-    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+    body { background-color: var(--bg); color: var(--text); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* 모달 공통 */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    
+    /* 단일 로그인 폼 */
+    .login-card { background: #ffffff; width: 90%; max-width: 420px; padding: 35px 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); text-align: center; }
+    .login-card h2 { color: var(--primary); font-size: 1.5rem; margin-bottom: 8px; }
+    .login-card p.sub { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
+    .form-group { margin-bottom: 18px; text-align: left; }
+    .form-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #334155; }
+    .form-control { width: 100%; padding: 12px 14px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; outline: none; transition: 0.2s; }
+    .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .login-btn { width: 100%; padding: 13px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; margin-top: 5px; }
+    .login-btn:hover { background: #1d4ed8; }
+
+    /* 헤더 & 탭 */
+    header { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    header h1 { font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .header-btns { display: flex; align-items: center; gap: 10px; }
+    .student-badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); padding: 6px 14px; border-radius: 20px; font-size: 0.88rem; font-weight: 600; color: #93c5fd; }
+    
+    .tab-nav { display: flex; background: #ffffff; border-bottom: 2px solid var(--border); padding: 0 24px; gap: 8px; position: sticky; top: 0; z-index: 100; }
+    .tab-btn { padding: 14px 20px; border: none; background: none; font-size: 1rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s; }
+    .tab-btn:hover { color: var(--primary-light); }
+    .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+    /* 메인 콘텐츠 */
+    .content-container { max-width: 1400px; width: 100%; margin: 20px auto; padding: 0 20px; flex: 1; }
+    .tab-pane { display: none; animation: fadeIn 0.25s ease; }
+    .tab-pane.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--border); margin-bottom: 24px; }
+    .card h2 { font-size: 1.25rem; color: var(--primary); margin-bottom: 8px; }
+    .card p.desc { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 18px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* 버튼 및 인풋 */
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--primary-light); color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-outline { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .btn-outline:hover { background: #e2e8f0; }
+
+    /* 표 */
+    .table-wrapper { max-height: 480px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; text-align: center; }
+    th { background: #f8fafc; color: #334155; padding: 11px 8px; position: sticky; top: 0; border-bottom: 2px solid var(--border); z-index: 10; }
+    td { padding: 9px 8px; border-bottom: 1px solid var(--border); }
+    tr:hover td { background: #f0f7ff; }
+
+    /* 컨트롤 슬라이더 */
+    .control-panel { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 18px; }
+    .control-row { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .control-row:last-child { margin-bottom: 0; }
+    .control-row label { width: 140px; font-weight: 600; font-size: 0.9rem; color: #334155; }
+    .control-row input[type="range"] { flex: 1; accent-color: var(--primary-light); cursor: pointer; }
+    .value-badge { width: 85px; text-align: right; font-weight: 700; font-size: 1rem; color: var(--primary); }
+
+    /* 텍스트 영역 및 질문 */
+    .qa-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 20px; }
+    .qa-item { margin-bottom: 22px; }
+    .qa-label { font-weight: 700; font-size: 0.95rem; color: #1e293b; margin-bottom: 6px; display: flex; gap: 8px; }
+    .qa-label .q-num { background: var(--primary); color: white; font-size: 0.75rem; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; height: fit-content; margin-top: 2px;}
+    .auto-textarea { width: 100%; min-height: 80px; padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; resize: none; overflow-y: hidden; outline: none; }
+    .auto-textarea:focus { border-color: var(--primary); }
+    .math-tip { font-size: 0.8rem; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 4px; background: #e0e7ff; padding: 4px 8px; border-radius: 4px; width: fit-content;}
+    
+    /* 시뮬레이션 및 지도 */
+    #waveCanvas { width: 100%; height: 240px; background: #1e293b; border-radius: 6px; display: block; }
+    #map { width: 100%; height: 500px; border-radius: 8px; border: 1px solid var(--border); }
+    .image-preview { max-width: 100%; max-height: 260px; border-radius: 6px; border: 1px solid var(--border); display: none; margin: 10px auto 0; }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body>
 
-<script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHeHYv058AhEQYlj8I6jWVFRaBoeOvupxn6TJ_nKKeriaZpq0ais5t6xuPWcYWuLejTw/exec";
-  
-  let currentUser = null;
-  let currentData = getEmptyData();
+  <!-- 0. 로그인 모달 -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="login-card">
+      <h2 id="loginTitle">지구시스템과학 탐구</h2>
+      <p class="sub">지진파 자료를 활용하여 지각의 두께 구하기</p>
 
-  function getEmptyData() {
-    return {
-      basic: {}, academic: { curriculum: [], mockExams: [], grades: { notes: '' } }, 
-      career: { exploration: [], selfDirected: [] }, 
-      community: { items: [] }, 
-      reading: []
-    };
-  }
+      <div class="form-group">
+        <label for="inputStudentId">ID (학번 또는 교사 계정)</label>
+        <input type="text" id="inputStudentId" class="form-control" placeholder="ID를 입력하세요" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="inputPassword">비밀번호</label>
+        <input type="password" id="inputPassword" class="form-control" placeholder="비밀번호를 입력하세요">
+      </div>
 
-  const curriculumMap = {
-    "문학": "일반선택", "독서": "일반선택", "화법과언어": "일반선택", "심화국어": "진로선택",
-    "대수": "일반선택", "미적분I": "일반선택", "확률과통계": "일반선택", "미적분II": "진로선택", "기하": "진로선택",
-    "영어I": "일반선택", "영어II": "일반선택", "영어독해와작문": "일반선택", "영미문학읽기": "진로선택",
-    "한국지리": "일반선택", "세계사": "일반선택", "물리학": "일반선택", "화학": "일반선택", "생명과학": "일반선택",
-    "물리학II": "진로선택", "화학II": "진로선택", "수학과문화": "융합선택", "실생활과통계": "융합선택"
-  };
-
-  const mockExamRows = [
-    { year: '1학년', month: '3월' }, { year: '1학년', month: '6월' }, { year: '1학년', month: '9월' }, { year: '1학년', month: '10월' }, { year: '1학년', month: '11월' },
-    { year: '2학년', month: '3월' }, { year: '2학년', month: '6월' }, { year: '2학년', month: '9월' }, { year: '2학년', month: '10월' }, { year: '2학년', month: '11월' },
-    { year: '3학년', month: '3월' }, { year: '3학년', month: '6월' }, { year: '3학년', month: '9월' }, { year: '3학년', month: '10월' }, { year: '3학년', month: '11월' }
-  ];
-
-  const initialCommunityItems = [
-    { category: '리더십', subCategory: '임원 활동' },
-    { category: '리더십', subCategory: '협업 활동' },
-    { category: '자기관리', subCategory: '학업 성장' },
-    { category: '자기관리', subCategory: '생활 습관' },
-    { category: '자기관리', subCategory: '문제 해결' },
-    { category: '봉사정신', subCategory: '학급 역할' },
-    { category: '봉사정신', subCategory: '멘토링' },
-    { category: '봉사정신', subCategory: '또래상담' },
-    { category: '봉사정신', subCategory: '기타' },
-    { category: '관계지향', subCategory: '교우 관계' },
-    { category: '관계지향', subCategory: '갈등 관리' },
-    { category: '관계지향', subCategory: '행사 참여' }
-  ];
-
-  // 텍스트 영역 높이 자동 조절 함수
-  function autoResizeTextarea(el) {
-    el.style.height = 'auto';
-    el.style.height = (el.scrollHeight) + 'px';
-  }
-
-  async function login() {
-    const id = document.getElementById('login-id').value.trim();
-    const pw = document.getElementById('login-pw').value.trim();
-
-    if(!id || !pw) {
-      alert("ID와 비밀번호를 입력해주세요.");
-      return;
-    }
-
-    if (!isNaN(id) && (id.length !== 6 || id[2] !== '0')) {
-      alert("학번은 입학년도(2)+0+반(1)+번호(2) 형식의 6자리 숫자여야 합니다. (예: 260101)");
-      return;
-    }
-
-    showLoading(true);
-    try {
-      const response = await fetch(SCRIPT_URL, {
-        method: 'POST', body: JSON.stringify({ action: 'login', id: id, pw: pw })
-      });
-      const result = await response.json();
-      
-      if(result.success) {
-        if(result.role === 'teacher') {
-          currentUser = { role: 'teacher' };
-          await fetchAllStudents();
-          document.getElementById('login-screen').classList.add('hidden');
-          document.getElementById('teacher-screen').classList.remove('hidden');
-        } else {
-          currentUser = { role: 'student', id: id, pw: pw };
-          if(result.data) mergeData(result.data);
-          renderStudentUI();
-          document.getElementById('login-screen').classList.add('hidden');
-          document.getElementById('student-screen').classList.remove('hidden');
-        }
-      } else {
-        alert(result.message);
-      }
-    } catch(e) {
-      alert("서버 통신 오류: " + e.message);
-    }
-    showLoading(false);
-  }
-
-  function mergeData(serverData) {
-    if(serverData.basic) currentData.basic = { ...currentData.basic, ...serverData.basic };
-    
-    if(serverData.academic) currentData.academic = { ...currentData.academic, ...serverData.academic };
-    if(!Array.isArray(currentData.academic.curriculum)) currentData.academic.curriculum = [];
-    if(typeof currentData.academic.grades !== 'object') currentData.academic.grades = { notes: '' };
-    if(!Array.isArray(currentData.academic.mockExams) || currentData.academic.mockExams.length === 0) {
-      currentData.academic.mockExams = mockExamRows.map(r => ({...r}));
-    }
-    
-    if(serverData.career) currentData.career = { ...currentData.career, ...serverData.career };
-    if(!Array.isArray(currentData.career.exploration)) currentData.career.exploration = [];
-    if(!Array.isArray(currentData.career.selfDirected)) currentData.career.selfDirected = [];
-    
-    if(serverData.community) currentData.community = { ...currentData.community, ...serverData.community };
-    if(!Array.isArray(currentData.community.items) || currentData.community.items.length === 0 || !currentData.community.items[0].subCategory) {
-      currentData.community.items = initialCommunityItems.map(r => ({...r}));
-    }
-    
-    if(Array.isArray(serverData.reading)) currentData.reading = serverData.reading;
-    if(!Array.isArray(currentData.reading) || currentData.reading.length === 0) {
-      currentData.reading = [{},{},{}];
-    }
-  }
-
-  async function saveData(isTeacherMode = false, studentId = null) {
-    showLoading(true);
-    const payload = {
-      action: 'saveData',
-      id: isTeacherMode ? studentId : currentUser.id,
-      pw: isTeacherMode ? "" : currentUser.pw, 
-      basic: currentData.basic,
-      academic: currentData.academic,
-      career: currentData.career,
-      community: currentData.community,
-      reading: currentData.reading
-    };
-
-    try {
-      const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-      const result = await response.json();
-      alert(result.message);
-    } catch(e) {
-      alert("저장 중 오류가 발생했습니다.");
-    }
-    showLoading(false);
-  }
-
-  function switchTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('bg-blue-600', 'text-white'));
-    document.getElementById(tabId).style.display = 'block';
-    event.currentTarget.classList.add('bg-blue-600', 'text-white');
-    
-    // 탭을 전환할 때 숨겨져 있던 텍스트 영역들의 높이를 재계산
-    setTimeout(() => {
-      document.querySelectorAll('.auto-resize').forEach(el => autoResizeTextarea(el));
-    }, 10);
-  }
-
-  function addRow(section, category, maxLimit = 30) {
-    let arr = category ? currentData[section][category] : currentData[section];
-    if (arr.length >= maxLimit) {
-      alert(`최대 ${maxLimit}개까지만 입력할 수 있습니다.`);
-      return;
-    }
-    arr.push({});
-    renderStudentUI();
-  }
-
-  function deleteRow(section, category, index) {
-    let arr = category ? currentData[section][category] : currentData[section];
-    arr.splice(index, 1);
-    renderStudentUI();
-  }
-
-  function updateArray(section, category, index, field, value) {
-    if(category) currentData[section][category][index][field] = value;
-    else currentData[section][index][field] = value;
-
-    if (section === 'academic' && category === 'curriculum' && field === 'subject') {
-      const autoCat = curriculumMap[value.trim()];
-      if(autoCat) {
-        currentData[section][category][index]['type'] = autoCat;
-        renderStudentUI(); 
-      }
-    }
-  }
-
-  function updateBasicInfo(field, value) { currentData.basic[field] = value; }
-  
-  function updateGrades(semester, field, value) {
-    if(!currentData.academic.grades[semester]) currentData.academic.grades[semester] = {};
-    currentData.academic.grades[semester][field] = value;
-  }
-  function updateGradeNotes(value) {
-    if(!currentData.academic.grades) currentData.academic.grades = {};
-    currentData.academic.grades.notes = value;
-  }
-
-  function renderStudentUI() {
-    document.getElementById('b-name').value = currentData.basic.name || '';
-    document.getElementById('b-career').value = currentData.basic.career || '';
-    document.getElementById('b-uni').value = currentData.basic.university || '';
-    document.getElementById('b-major').value = currentData.basic.major || '';
-    document.getElementById('b-club1').value = currentData.basic.club1 || '';
-    document.getElementById('b-club2').value = currentData.basic.club2 || '';
-    document.getElementById('b-club3').value = currentData.basic.club3 || '';
-    document.getElementById('b-phone').value = currentData.basic.phone || '';
-
-    // 학업역량: 내신 교과 성적
-    const gradeRows = ['1-1', '1-2', '2-1', '2-2', '3-1', '현재 기준 교과 성적'];
-    let gradeHtml = '';
-    gradeRows.forEach(row => {
-      const g5 = currentData.academic.grades[row] ? (currentData.academic.grades[row]['g5'] || '') : '';
-      const g9 = currentData.academic.grades[row] ? (currentData.academic.grades[row]['g9'] || '') : '';
-      const comp = currentData.academic.grades[row] ? (currentData.academic.grades[row]['comp'] || '') : '';
-      gradeHtml += `<tr>
-        <td class="border p-2 text-center bg-gray-50 font-bold">${row}</td>
-        <td class="border p-0"><input type="text" value="${g5}" onchange="updateGrades('${row}','g5',this.value)" class="w-full h-full p-2 text-center outline-none"></td>
-        <td class="border p-0"><input type="text" value="${g9}" onchange="updateGrades('${row}','g9',this.value)" class="w-full h-full p-2 text-center outline-none"></td>
-        ${row === '1-1' ? `<td rowspan="6" class="border p-0"><textarea class="w-full h-full p-2 outline-none resize-none" onchange="updateGrades('all','comp',this.value)">${currentData.academic.grades['all']?.comp || ''}</textarea></td>` : ''}
-      </tr>`;
-    });
-    document.getElementById('grade-tbody').innerHTML = gradeHtml;
-    document.getElementById('grade-notes').value = currentData.academic.grades.notes || '';
-
-    // 모의고사 렌더링
-    if(!Array.isArray(currentData.academic.mockExams) || currentData.academic.mockExams.length === 0) {
-      currentData.academic.mockExams = mockExamRows.map(r => ({...r}));
-    }
-    let mockHtml = '';
-    currentData.academic.mockExams.forEach((exam, i) => {
-      mockHtml += `<tr>
-        ${i % 5 === 0 ? `<td rowspan="5" class="border p-1 text-center font-bold bg-gray-50 w-16">${exam.year}</td>` : ''}
-        <td class="border p-1 text-center bg-gray-50 w-16">${exam.month}</td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.korP||''}" onchange="updateArray('academic','mockExams',${i},'korP',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.korG||''}" onchange="updateArray('academic','mockExams',${i},'korG',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.mathP||''}" onchange="updateArray('academic','mockExams',${i},'mathP',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.mathG||''}" onchange="updateArray('academic','mockExams',${i},'mathG',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.engP||''}" onchange="updateArray('academic','mockExams',${i},'engP',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.engG||''}" onchange="updateArray('academic','mockExams',${i},'engG',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.socP||''}" onchange="updateArray('academic','mockExams',${i},'socP',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.socG||''}" onchange="updateArray('academic','mockExams',${i},'socG',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.sciP||''}" onchange="updateArray('academic','mockExams',${i},'sciP',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-xs outline-none" value="${exam.sciG||''}" onchange="updateArray('academic','mockExams',${i},'sciG',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-sm outline-none" value="${exam.avgPercentile||''}" onchange="updateArray('academic','mockExams',${i},'avgPercentile',this.value)"></td>
-        <td class="border p-0"><input type="text" class="w-full h-full text-center p-1 text-sm outline-none" value="${exam.avgGrade||''}" onchange="updateArray('academic','mockExams',${i},'avgGrade',this.value)"></td>
-      </tr>`;
-    });
-    document.getElementById('mock-exam-tbody').innerHTML = mockHtml;
-
-    // 교육과정 렌더링
-    renderList('curriculum-list', currentData.academic.curriculum, 
-      (item, i) => `
-      <div class="flex gap-2 mb-2 items-center">
-        <input type="text" placeholder="이수학기(1-1)" value="${item.semester||''}" onchange="updateArray('academic','curriculum',${i},'semester',this.value)" class="border p-2 w-24 rounded text-sm">
-        <input type="text" placeholder="과목명" value="${item.subject||''}" onchange="updateArray('academic','curriculum',${i},'subject',this.value)" class="border p-2 flex-1 rounded text-sm">
-        <input type="text" placeholder="등급" value="${item.grade||''}" onchange="updateArray('academic','curriculum',${i},'grade',this.value)" class="border p-2 w-16 rounded text-sm text-center">
-        <input type="text" placeholder="성취도" value="${item.achieve||''}" onchange="updateArray('academic','curriculum',${i},'achieve',this.value)" class="border p-2 w-16 rounded text-sm text-center">
-        <select onchange="updateArray('academic','curriculum',${i},'type',this.value)" class="border p-2 w-40 bg-gray-50 rounded text-sm">
-          <option value="">구분선택</option>
-          <option value="일반선택" ${item.type==='일반선택'?'selected':''}>일반선택</option>
-          <option value="진로선택" ${item.type==='진로선택'?'selected':''}>진로선택</option>
-          <option value="융합선택" ${item.type==='융합선택'?'selected':''}>융합선택</option>
-          <option value="공동교육과정" ${item.type==='공동교육과정'?'selected':''}>공동교육과정</option>
-          <option value="시교육청프로그램" ${item.type==='시교육청프로그램'?'selected':''}>시교육청프로그램</option>
-        </select>
-        <button onclick="deleteRow('academic','curriculum',${i})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded">X</button>
-      </div>`);
-
-    // 진로탐색활동
-    renderList('exploration-list', currentData.career.exploration, 
-      (item, i) => `
-      <div class="grid grid-cols-12 gap-2 mb-2 p-2 border bg-white rounded items-start shadow-sm text-sm">
-        <select onchange="updateArray('career','exploration',${i},'type',this.value)" class="col-span-2 border p-2 rounded h-[38px]">
-          <option value="전공탐색" ${item.type==='전공탐색'?'selected':''}>전공탐색</option>
-          <option value="진로체험" ${item.type==='진로체험'?'selected':''}>진로체험</option>
-        </select>
-        <textarea placeholder="관심 분야" oninput="autoResizeTextarea(this)" onchange="updateArray('career','exploration',${i},'interest',this.value)" class="col-span-2 border p-2 rounded auto-resize" rows="1">${item.interest||''}</textarea>
-        <textarea placeholder="활동명" oninput="autoResizeTextarea(this)" onchange="updateArray('career','exploration',${i},'name',this.value)" class="col-span-2 border p-2 rounded auto-resize" rows="1">${item.name||''}</textarea>
-        <textarea placeholder="활동내용" oninput="autoResizeTextarea(this)" onchange="updateArray('career','exploration',${i},'content',this.value)" class="col-span-3 border p-2 rounded auto-resize" rows="1">${item.content||''}</textarea>
-        <input type="text" placeholder="활동시기" value="${item.period||''}" onchange="updateArray('career','exploration',${i},'period',this.value)" class="col-span-1 border p-2 rounded text-center h-[38px]">
-        <select onchange="updateArray('career','exploration',${i},'area',this.value)" class="col-span-1 border p-2 rounded h-[38px]">
-          ${getRecordAreaOptions(item.area)}
-        </select>
-        <button onclick="deleteRow('career','exploration',${i})" class="col-span-1 bg-red-500 text-white p-2 rounded hover:bg-red-600 text-xs h-[38px]">삭제</button>
-      </div>`);
-
-    // 진로탐구활동
-    renderList('self-directed-list', currentData.career.selfDirected,
-      (item, i) => `
-      <div class="border p-4 mb-4 bg-white rounded shadow-sm relative text-sm">
-        <button onclick="deleteRow('career','selfDirected',${i})" class="absolute top-2 right-2 text-red-500 text-xs font-bold hover:underline">삭제</button>
-        <div class="grid grid-cols-3 gap-3 mb-3">
-          <div class="col-span-2"><label class="font-bold text-blue-800 block mb-1">탐구 주제</label><textarea oninput="autoResizeTextarea(this)" onchange="updateArray('career','selfDirected',${i},'topic',this.value)" class="w-full border p-2 rounded auto-resize" rows="1">${item.topic||''}</textarea></div>
-          <div><label class="font-bold text-blue-800 block mb-1">탐구 유형</label>
-            <select onchange="updateArray('career','selfDirected',${i},'type',this.value)" class="w-full border p-2 rounded h-[38px]">
-              <option value="">선택</option>
-              <option value="학술자료 조사/분석" ${item.type==='학술자료 조사/분석'?'selected':''}>학술자료 조사/분석</option>
-              <option value="실험/실습/제작" ${item.type==='실험/실습/제작'?'selected':''}>실험/실습/제작</option>
-              <option value="데이터분석/활용" ${item.type==='데이터분석/활용'?'selected':''}>데이터분석/활용</option>
-              <option value="융합/실천/사회확장" ${item.type==='융합/실천/사회확장'?'selected':''}>융합/실천/사회확장</option>
-            </select>
-          </div>
-          <div><label class="font-bold text-blue-800 block mb-1">교과 활동</label><input type="text" value="${item.subjectActivity||''}" onchange="updateArray('career','selfDirected',${i},'subjectActivity',this.value)" class="w-full border p-2 rounded h-[38px]"></div>
-          <div><label class="font-bold text-blue-800 block mb-1">관련 전공</label><input type="text" value="${item.major||''}" onchange="updateArray('career','selfDirected',${i},'major',this.value)" class="w-full border p-2 rounded h-[38px]"></div>
-          <div><label class="font-bold text-blue-800 block mb-1">활동 시기</label><input type="text" value="${item.period||''}" onchange="updateArray('career','selfDirected',${i},'period',this.value)" class="w-full border p-2 rounded h-[38px]"></div>
-        </div>
-        <div class="grid grid-cols-4 gap-2 mb-2">
-          <div><label class="text-xs font-bold text-gray-600 block mb-1">동기/문제인식</label><textarea oninput="autoResizeTextarea(this)" onchange="updateArray('career','selfDirected',${i},'motive',this.value)" class="w-full border p-2 auto-resize rounded" rows="2">${item.motive||''}</textarea></div>
-          <div><label class="text-xs font-bold text-gray-600 block mb-1">해결방법</label><textarea oninput="autoResizeTextarea(this)" onchange="updateArray('career','selfDirected',${i},'solution',this.value)" class="w-full border p-2 auto-resize rounded" rows="2">${item.solution||''}</textarea></div>
-          <div><label class="text-xs font-bold text-gray-600 block mb-1">결론도출</label><textarea oninput="autoResizeTextarea(this)" onchange="updateArray('career','selfDirected',${i},'conclusion',this.value)" class="w-full border p-2 auto-resize rounded" rows="2">${item.conclusion||''}</textarea></div>
-          <div><label class="text-xs font-bold text-gray-600 block mb-1">성장 및 교훈</label><textarea oninput="autoResizeTextarea(this)" onchange="updateArray('career','selfDirected',${i},'growth',this.value)" class="w-full border p-2 auto-resize rounded" rows="2">${item.growth||''}</textarea></div>
-        </div>
-        <div class="flex justify-between items-center mt-3">
-          <div class="flex-1 mr-4"><label class="text-xs font-bold text-gray-600 block mb-1">후속 활동</label><textarea oninput="autoResizeTextarea(this)" onchange="updateArray('career','selfDirected',${i},'followUp',this.value)" class="w-full border p-2 rounded auto-resize" rows="1">${item.followUp||''}</textarea></div>
-          <div class="mt-4"><label class="text-sm font-bold mr-2">학생부 기재 영역:</label><select onchange="updateArray('career','selfDirected',${i},'area',this.value)" class="border p-2 text-sm rounded">${getRecordAreaOptions(item.area)}</select></div>
-        </div>
-      </div>`);
-
-    // 공동체 역량
-    if(!Array.isArray(currentData.community.items) || currentData.community.items.length === 0 || !currentData.community.items[0].subCategory) {
-      currentData.community.items = initialCommunityItems.map(r => ({...r}));
-    }
-    let comHtml = '';
-    let lastCat = '';
-    currentData.community.items.forEach((item, i) => {
-      let rowSpan = currentData.community.items.filter(x => x.category === item.category).length;
-      comHtml += `<tr>
-        ${item.category !== lastCat ? `<td rowspan="${rowSpan}" class="border p-2 text-center font-bold bg-gray-50">${item.category}</td>` : ''}
-        <td class="border p-2 text-center bg-gray-50 text-sm">${item.subCategory}</td>
-        <td class="border p-0 align-top"><textarea class="w-full h-full p-2 text-sm outline-none auto-resize" rows="2" oninput="autoResizeTextarea(this)" onchange="updateArray('community','items',${i},'role',this.value)">${item.role||''}</textarea></td>
-        <td class="border p-0 align-top"><textarea class="w-full h-full p-2 text-sm outline-none auto-resize" rows="2" oninput="autoResizeTextarea(this)" onchange="updateArray('community','items',${i},'content',this.value)">${item.content||''}</textarea></td>
-        <td class="border p-0 align-top"><textarea class="w-full h-full p-2 text-sm outline-none auto-resize" rows="2" oninput="autoResizeTextarea(this)" onchange="updateArray('community','items',${i},'evaluation',this.value)">${item.evaluation||''}</textarea></td>
-        <td class="border p-0 align-top"><input type="text" class="w-full p-2 text-center text-sm outline-none" value="${item.time||''}" onchange="updateArray('community','items',${i},'time',this.value)"></td>
-        <td class="border p-0 text-center align-top"><select class="p-2 w-full text-sm outline-none bg-transparent" onchange="updateArray('community','items',${i},'area',this.value)">${getRecordAreaOptions(item.area)}</select></td>
-      </tr>`;
-      lastCat = item.category;
-    });
-    document.getElementById('community-tbody').innerHTML = comHtml;
-
-    // 독서활동
-    if(!Array.isArray(currentData.reading) || currentData.reading.length === 0) {
-      currentData.reading = [{},{},{}]; 
-    }
-    renderList('reading-list', currentData.reading,
-      (item, i) => `
-      <div class="flex gap-2 mb-2 items-start text-sm">
-        <textarea placeholder="도서명" oninput="autoResizeTextarea(this)" onchange="updateArray('reading',null,${i},'title',this.value)" class="border p-2 w-1/5 rounded auto-resize" rows="1">${item.title||''}</textarea>
-        <textarea placeholder="저자" oninput="autoResizeTextarea(this)" onchange="updateArray('reading',null,${i},'author',this.value)" class="border p-2 w-24 rounded auto-resize" rows="1">${item.author||''}</textarea>
-        <textarea placeholder="인상깊은 이유" oninput="autoResizeTextarea(this)" onchange="updateArray('reading',null,${i},'reason',this.value)" class="border p-2 flex-1 rounded auto-resize" rows="1">${item.reason||''}</textarea>
-        <textarea placeholder="연계활동" oninput="autoResizeTextarea(this)" onchange="updateArray('reading',null,${i},'linkedActivity',this.value)" class="border p-2 flex-1 rounded auto-resize" rows="1">${item.linkedActivity||''}</textarea>
-        <input type="text" placeholder="활동시기" value="${item.period||''}" onchange="updateArray('reading',null,${i},'period',this.value)" class="border p-2 w-20 text-center rounded h-[38px]">
-        <select onchange="updateArray('reading',null,${i},'area',this.value)" class="border p-2 w-20 rounded h-[38px]">${getRecordAreaOptions(item.area)}</select>
-        <button onclick="deleteRow('reading',null,${i})" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded h-[38px]">X</button>
-      </div>`);
-
-    // 모든 렌더링이 끝난 후 숨겨진 텍스트 영역들의 높이 재계산
-    setTimeout(() => {
-      document.querySelectorAll('.auto-resize').forEach(el => autoResizeTextarea(el));
-    }, 10);
-  }
-
-  function renderList(containerId, array, templateFn) {
-    document.getElementById(containerId).innerHTML = array.map((item, i) => templateFn(item, i)).join('');
-  }
-  function getRecordAreaOptions(selected) {
-    const opts = ['선택','자율','진로','동아리','과세특','기타'];
-    return opts.map(o => `<option value="${o}" ${selected===o?'selected':''}>${o}</option>`).join('');
-  }
-
-  function showLoading(show) {
-    document.getElementById('loading').style.display = show ? 'flex' : 'none';
-  }
-
-  let allStudentsData = [];
-  async function fetchAllStudents() {
-    const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getAllStudents' }) });
-    const result = await response.json();
-    allStudentsData = result.students || [];
-    renderTeacherTable();
-  }
-
-  function renderTeacherTable() {
-    const term = document.getElementById('search-input').value;
-    const filtered = allStudentsData.filter(s => s.id.includes(term) || (s.data.basic.name && s.data.basic.name.includes(term)));
-    
-    document.getElementById('teacher-tbody').innerHTML = filtered.map(s => `
-      <tr class="border-b hover:bg-blue-50 cursor-pointer" onclick="openStudentModal('${s.id}')">
-        <td class="p-3 text-center">${s.id}</td>
-        <td class="p-3 text-center font-bold">${s.data.basic.name || '-'}</td>
-        <td class="p-3 text-center">${s.data.basic.career || '-'}</td>
-        <td class="p-3 text-center"><button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold shadow-sm">상세보기</button></td>
-      </tr>
-    `).join('');
-  }
-
-  let viewingStudentId = null;
-  function openStudentModal(id) {
-    const student = allStudentsData.find(s => s.id === id);
-    if(!student) return;
-    viewingStudentId = id;
-    currentData = getEmptyData();
-    mergeData(student.data); 
-
-    document.getElementById('modal-title').innerText = `${currentData.basic.name || '이름미상'} (${id}) 포트폴리오`;
-    document.getElementById('m-teacher-notes').value = currentData.basic.teacherNotes || '';
-    
-    renderStudentUI(); 
-    
-    document.getElementById('print-modal').classList.remove('hidden');
-    const formContent = document.getElementById('reusable-form-content');
-    document.getElementById('modal-form-container').appendChild(formContent);
-    formContent.classList.remove('h-[75vh]', 'overflow-y-auto', 'bg-white', 'p-8');
-    
-    // 교사용 상세 보기 모달에서는 탭 1~5만 보이게 하고, 탭 6(참고자료)은 완전히 가리기
-    formContent.querySelectorAll('.tab-content').forEach(el => {
-      if(el.id === 'tab6') {
-        el.style.display = 'none';
-      } else {
-        el.style.display = 'block';
-      }
-    });
-
-    // 모달창 오픈 시 높이 재계산
-    setTimeout(() => {
-      document.querySelectorAll('.auto-resize').forEach(el => autoResizeTextarea(el));
-    }, 50);
-  }
-
-  function closeStudentModal() {
-    document.getElementById('print-modal').classList.add('hidden');
-    viewingStudentId = null;
-    currentData = getEmptyData();
-    
-    const formContent = document.getElementById('reusable-form-content');
-    document.getElementById('student-form-mount').appendChild(formContent);
-    formContent.classList.add('h-[75vh]', 'overflow-y-auto', 'bg-white', 'p-8');
-    
-    switchTab('tab1');
-    document.getElementById('tab1-btn').click();
-  }
-
-  async function saveTeacherNotes() {
-    currentData.basic.teacherNotes = document.getElementById('m-teacher-notes').value;
-    await saveData(true, viewingStudentId);
-  }
-</script>
-
-<!-- 로딩 -->
-<div id="loading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-  <div class="text-white text-xl font-bold">처리 중...</div>
-</div>
-
-<!-- 로그인 화면 -->
-<div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50">
-  <div class="bg-white p-10 rounded-xl shadow-xl w-96 border border-gray-100">
-    <h1 class="text-2xl font-extrabold text-center mb-2 text-gray-900">생각의 지도 큐레이팅</h1>
-    <p class="text-center text-sm text-gray-500 mb-8">개인 맞춤형 포트폴리오 관리 시스템</p>
-    <div class="mb-5">
-      <label class="block text-sm font-bold mb-2 text-gray-700">ID (학번)</label>
-      <input type="text" id="login-id" class="w-full border border-gray-300 p-3 rounded-md outline-none" placeholder="260101 (교사는 교사ID 입력)">
-    </div>
-    <div class="mb-8">
-      <label class="block text-sm font-bold mb-2 text-gray-700">비밀번호</label>
-      <input type="password" id="login-pw" class="w-full border border-gray-300 p-3 rounded-md outline-none" placeholder="비밀번호 입력">
-    </div>
-    <button onclick="login()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-md hover:bg-blue-700">로그인 및 시작하기</button>
-  </div>
-</div>
-
-<!-- 학생 화면 -->
-<div id="student-screen" class="hidden min-h-screen bg-gray-50 pt-6">
-  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl border border-gray-200 overflow-hidden">
-    <!-- 헤더 -->
-    <div class="flex justify-between items-center bg-blue-700 text-white p-5">
-      <h1 class="text-2xl font-extrabold flex items-center gap-2">나의 생각의 지도 포트폴리오</h1>
-      <div>
-        <button onclick="saveData()" class="bg-green-500 hover:bg-green-600 font-bold px-6 py-2 rounded-md mr-3">데이터 저장하기</button>
-        <button onclick="location.reload()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm">로그아웃</button>
+      <button class="login-btn" id="btnLoginSubmit" onclick="handleLogin()">탐구 시작</button>
+      <div style="margin-top: 14px; font-size: 0.75rem; color: #94a3b8;">
+        계정 정보는 연결된 구글 스프레드시트를 통해 확인됩니다.
       </div>
     </div>
-    
-    <!-- 탭 네비게이션 -->
-    <div class="flex border-b border-gray-200 text-sm font-bold bg-gray-100 overflow-x-auto no-print">
-      <button id="tab1-btn" onclick="switchTab('tab1')" class="tab-btn py-4 px-8 bg-blue-600 text-white whitespace-nowrap border-r border-gray-200">1. 기본인적사항</button>
-      <button onclick="switchTab('tab2')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">2. 학업역량</button>
-      <button onclick="switchTab('tab3')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">3. 진로역량</button>
-      <button onclick="switchTab('tab4')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">4. 공동체역량</button>
-      <button onclick="switchTab('tab5')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap border-r border-gray-200">5. 독서활동</button>
-      <button onclick="switchTab('tab6')" class="tab-btn py-4 px-8 text-gray-600 whitespace-nowrap">6. 참고자료</button>
-    </div>
+  </div>
 
-    <div id="student-form-mount">
-      <div id="reusable-form-content" class="p-8 h-[75vh] overflow-y-auto bg-white">
+  <!-- 교사용 대시보드 모달 -->
+  <div id="teacherDashboardModal" class="modal-overlay" style="display: none;">
+    <div style="background: #ffffff; width: 95%; max-width: 1300px; height: 90vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;">
+      <div style="background: #1e3a8a; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0;">👨‍🏫 학생 제출 현황 ('제출결과' 시트 실시간 연동)</h2>
+        <button class="btn" onclick="closeTeacherDashboard()" style="background: rgba(255,255,255,0.2); color: white;">닫기 ✕</button>
+      </div>
+      <div style="background: #f8fafc; padding: 12px 24px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 10px;">
+        <button class="btn btn-primary" onclick="refreshStudentSubmissions()">🔄 실시간 새로고침</button>
+        <button class="btn btn-outline" onclick="exportSubmissionsToCSV()">📥 전체 CSV 다운로드</button>
+        <button class="btn btn-outline" onclick="openGoogleSheetLink()">📊 구글 시트 열기</button>
+      </div>
+      <div style="flex: 1; display: grid; grid-template-columns: 300px 1fr; background: #f1f5f9; overflow: hidden;">
+        <div style="background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; padding: 12px;" id="teacherStudentListContainer"></div>
+        <div style="overflow-y: auto; padding: 24px;" id="teacherStudentDetailContainer">
+          <p style="text-align: center; color: #64748b; margin-top: 100px; font-weight: bold;">좌측에서 학생을 선택해 주세요.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 헤더 -->
+  <header>
+    <h1>지구시스템과학 인터랙티브 탐구실</h1>
+    <div class="header-btns">
+      <button class="btn" id="btnTeacherDash" onclick="openTeacherDashboard()" style="display:none; background:#4f46e5; color:white; border:none;">
+        👨‍🏫 제출 현황
+      </button>
+      <button class="btn" onclick="generatePDF()" style="background:#059669; color:white; border:none;">
+        📄 PDF 저장
+      </button>
+      <button class="btn" onclick="logout()" style="background:#ef4444; color:white; border:none;">
+        로그아웃
+      </button>
+      <div class="student-badge" id="studentDisplay">로그인 대기 중</div>
+    </div>
+  </header>
+
+  <!-- 탭 네비게이션 -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab(0)">1. P파 주행시간 기초자료</button>
+    <button class="tab-btn" onclick="switchTab(1)">2. 주시곡선·두께·시뮬레이션</button>
+    <button class="tab-btn" onclick="switchTab(2)">3. 진앙 결정 탐구</button>
+  </nav>
+
+  <main class="content-container">
+
+    <!-- TAB 1 -->
+    <section id="tab-0" class="tab-pane active">
+      <div class="card">
+        <div class="card-header-flex">
+          <h2>P파 주행 시간 관측 데이터</h2>
+          <span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">(참고: 비상교육 지구시스템과학 P.42)</span>
+        </div>
+        <p class="desc">각 관측소의 진앙 거리와 P파 도착 시각으로부터 산출된 <strong>P파 주행 시간(초)</strong>이 제공됩니다.</p>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>관측소</th><th>진앙 거리 (km)</th><th>P파 도착 시각</th><th>P파 주행 시간 (초)</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 24px; border-top: 2px solid var(--border); padding-top: 24px;">
+          <h3 style="font-size: 1.18rem; color: var(--primary); margin-bottom: 8px;">📈 진앙 거리 - P파 주행 시간 그래프 (주시곡선)</h3>
+          <!-- 높이 700px로 2배 확장된 캔버스 영역 -->
+          <div style="position: relative; height: 700px;">
+            <canvas id="tab1Chart"></canvas>
+          </div>
+        </div>
+
+        <div class="qa-card">
+          <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 12px;">탐구 분석 과제</h3>
+          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 14px; margin-bottom: 16px; text-align: center;">
+            <div style="font-weight: bold; color: #1e3a8a; margin-bottom: 4px;">📐 지각의 두께(d) 유도식</div>
+            <div style="font-family: 'Times New Roman', serif; font-size: 1.25rem; font-style: italic; color: #1d4ed8;">d = (D / 2) &times; &radic;[ (v₂ - v₁) / (v₂ + v₁) ]</div>
+            <div style="font-size: 0.85rem; color: #475569;">(D: 교차 거리, 지각 속도 v₁ &approx; 5.6 km/s, 맨틀 속도 v₂ &approx; 8.0 km/s)</div>
+          </div>
+
+          <div class="qa-item">
+            <div class="qa-label"><span class="q-num">1</span><span>그래프를 이용하여 교차 거리(D)를 구하시오.</span></div>
+            <textarea id="tab1_q1" class="auto-textarea" placeholder="답변을 입력하세요..." oninput="autoResize(this)"></textarea>
+          </div>
+
+          <div class="qa-item">
+            <div class="qa-label"><span class="q-num">2</span><span>위에서 구한 교차 거리를 이용하여 지각의 두께(d)를 계산하시오.</span></div>
+            <textarea id="tab1_q2" class="auto-textarea" placeholder="계산 과정과 결과를 서술하세요..." oninput="autoResize(this)"></textarea>
+            <!-- 수식 입력 팁 추가 -->
+            <div class="math-tip">💡 <b>입력 팁:</b> 곱하기는 <b>*</b>, 나누기는 <b>/</b>, 루트는 <b>√ (또는 '루트')</b> 기호로 적어보세요. (예: 104 * 루트(2.4/13.6))</div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top: 10px;" onclick="submitTabAnswers('tab1')">답변 제출</button>
+          <span id="tab1_status" style="margin-left:12px; font-size:0.88rem; font-weight:600;"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2 -->
+    <section id="tab-1" class="tab-pane">
+      <div class="grid-2">
+        <div>
+          <div class="card">
+            <h2>인터랙티브 파라미터 제어 & 주시곡선</h2>
+            <div class="control-panel">
+              <div class="control-row"><label>지각 속도 (v₁):</label><input type="range" id="paramV1" min="4.5" max="6.8" step="0.1" value="5.6" oninput="updateAllModels()"><div class="value-badge" id="v1Val">5.6 km/s</div></div>
+              <div class="control-row"><label>맨틀 속도 (v₂):</label><input type="range" id="paramV2" min="7.0" max="9.0" step="0.1" value="8.0" oninput="updateAllModels()"><div class="value-badge" id="v2Val">8.0 km/s</div></div>
+              <div class="control-row"><label>교차 거리 (D):</label><input type="range" id="paramD" min="120" max="300" step="1" value="208" oninput="updateAllModels()"><div class="value-badge" id="dVal">208 km</div></div>
+            </div>
+            <div style="position: relative; height: 320px;"><canvas id="travelTimeChart"></canvas></div>
+
+            <div class="qa-card" style="margin-top: 16px;">
+              <h3 style="font-size:1.15rem; color:var(--primary); margin-bottom:14px;">주시곡선 심층 해석 탐구 과제</h3>
+              
+              <div class="qa-item">
+                <div class="qa-label"><span class="q-num">Q1</span><span>직접파 추세선의 기울기보다 굴절파 추세선의 기울기가 완만한 이유를 서술하시오.</span></div>
+                <textarea id="tab2_q1" class="auto-textarea" placeholder="속도와 기울기의 관계를 생각하며 적어보세요..." oninput="autoResize(this)"></textarea>
+                <div class="math-tip">💡 <b>입력 팁:</b> 그래프의 기울기는 '1 / 지진파 속도'를 의미합니다.</div>
+              </div>
+
+              <div class="qa-item">
+                <div class="qa-label"><span class="q-num">Q2</span><span>굴절파 추세선의 y절편(시간 절편 t₀)은 물리적으로 무엇을 의미하는가?</span></div>
+                <textarea id="tab2_q2" class="auto-textarea" placeholder="지각을 통과할 때 발생하는 시간 지연과 관련하여 서술하세요..." oninput="autoResize(this)"></textarea>
+              </div>
+
+              <div class="qa-item">
+                <div class="qa-label"><span class="q-num">Q3</span><span>v₁, v₂, 지각 두께(d) 변화 시 교차 거리(D)는 어떻게 변하는가? (이유 포함)</span></div>
+                <textarea id="tab2_q3" class="auto-textarea" placeholder="각 변수가 커지거나 작아질 때 교차 거리가 늘어날지 줄어들지 적어보세요..." oninput="autoResize(this)"></textarea>
+              </div>
+
+              <button class="btn btn-primary" onclick="submitTabAnswers('tab2')">답변 제출</button>
+              <span id="tab2_status" style="margin-left:12px; font-size:0.88rem; font-weight:600;"></span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>산출된 지각의 두께(d)</h2>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #1e3a8a; text-align: center; padding: 10px; background: #dbeafe; border-radius: 8px;">
+              <span id="calcResultDisplay">41.9</span> km
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>지진파 전파 및 도달 시뮬레이션</h2>
+            <p class="desc" style="font-size:0.85rem;">[비율 1:1 완벽 적용] 실제 임계각과 파동 전파 속도를 물리적으로 계산하여 시각화합니다.</p>
+            <div class="control-panel" style="padding: 12px; margin-bottom: 12px;">
+              <div class="control-row" style="margin-bottom:0;"><label style="width:120px;">관측소 거리:</label><input type="range" id="simDist" min="30" max="450" step="5" value="260" oninput="updateSimDist()"><div class="value-badge" id="simDistVal">260 km</div></div>
+            </div>
+            <div class="sim-container">
+              <canvas id="waveCanvas" width="600" height="240"></canvas>
+              <div class="sim-controls">
+                <button class="btn btn-primary" id="btnPlaySim" onclick="toggleSim()">재생</button>
+                <div id="simTimer" style="font-weight: bold; color: #38bdf8;">시간: 0.0 s</div>
+              </div>
+            </div>
+            <div id="simRaceOutcome" style="margin-top: 10px; font-size: 0.9rem; font-weight: 600; padding: 8px; border-radius: 6px; background: #f1f5f9;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3 -->
+    <section id="tab-2" class="tab-pane">
+      <div class="grid-2">
+        <div>
+          <div class="card" id="mapCard">
+            <div class="card-header-flex">
+              <h2>지도 연계형 진앙 결정</h2>
+              <button class="btn btn-outline" onclick="saveMapAsImage()">📷 지도 캡처(저장)</button>
+            </div>
+            <div class="station-selector-box">
+              <div><label style="color:#2563eb;">인천:</label><select id="selectIncheon" onchange="resetMapCircles()"><option value="10">관측소 #10 (201.7 km)</option><option value="8">관측소 #8 (188.6 km)</option></select></div>
+              <div><label style="color:#9333ea;">부산:</label><select id="selectBusan" onchange="resetMapCircles()"><option value="6">관측소 #6 (138.7 km)</option><option value="7">관측소 #7 (150.1 km)</option></select></div>
+              <div><label style="color:#16a34a;">광주:</label><select id="selectGwangju" onchange="resetMapCircles()"><option value="9">관측소 #9 (199.4 km)</option><option value="8">관측소 #8 (188.6 km)</option></select></div>
+            </div>
+            <div id="map"></div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+              <button class="btn btn-primary" onclick="drawEpicenterCircles()">진원 거리(R) 원 작도하기</button>
+              <button class="btn btn-outline" onclick="resetMapCircles()">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>진앙 및 진원 깊이 탐구 과제</h2>
+            <div class="qa-item">
+              <div class="qa-label"><span class="q-num">1</span><span>진앙이 표시된 지도를 그림판으로 편집 후 첨부하시오.</span></div>
+              <div class="image-preview-container" style="padding:10px;">
+                <input type="file" accept="image/*" onchange="handleImageUpload(event)" style="font-size:0.85rem;">
+                <img id="imagePreview" class="image-preview" alt="진앙 표시 이미지">
+              </div>
+            </div>
+
+            <div class="qa-item" style="margin-top:20px;">
+              <div class="qa-label"><span class="q-num">2</span><span>위 그림 및 관측 자료를 이용하여 진원 깊이(h)를 구하시오.</span></div>
+              <textarea id="tab3_q2" class="auto-textarea" style="min-height: 110px;" placeholder="피타고라스 정리 R² = d² + h² 를 이용하여 서술하세요..." oninput="autoResize(this)"></textarea>
+              <div class="math-tip">💡 <b>입력 팁:</b> h = √(R^2 - d^2) 공식을 이용해 보세요. (루트는 √, 제곱은 ^2)</div>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top: 10px;" onclick="submitTabAnswers('tab3')">답변 및 그림 제출</button>
+            <span id="tab3_status" style="margin-left:12px; font-size:0.88rem; font-weight:600;"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /* =========================================================================
+       1. 전역 설정 (교사 연동 URL 입력창)
+       ========================================================================= */
+    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwOaMmVX4VPlplhxXU05mas-athMnX7hGgV_PwMB_TBiJ5CiCotzF8c74n8tlFxNzN_zA/exec";
+
+    let currentStudentId = "";
+    let currentPassword = "";
+    let currentLoginRole = 'student';
+    let uploadedImageBase64 = "";
+    let latestFetchedData = null; // PDF 출력용 최신 데이터 캐시
+
+    /* =========================================================================
+       2. 로그인 및 대시보드 로직
+       ========================================================================= */
+    function handleLogin() {
+      const idInput = document.getElementById('inputStudentId').value.trim();
+      const pwdInput = document.getElementById('inputPassword').value.trim();
+
+      if (!idInput) { alert("ID를 입력해 주세요."); return; }
+      if (!pwdInput) { alert("비밀번호를 입력해 주세요."); return; }
+
+      const btn = document.getElementById('btnLoginSubmit');
+      btn.innerText = "접속 중...";
+
+      const isTeacher = (idInput.toLowerCase().includes('teacher') || idInput.includes('교사') || idInput === 'admin');
+      currentStudentId = idInput;
+      currentPassword = pwdInput;
+      currentLoginRole = isTeacher ? 'teacher' : 'student';
+
+      if (isTeacher) {
+        document.getElementById('studentDisplay').innerText = `교사 모드 (${idInput})`;
+        document.getElementById('btnTeacherDash').style.display = "inline-flex";
+      } else {
+        document.getElementById('studentDisplay').innerText = `ID: ${idInput}`;
+      }
+
+      document.getElementById('loginModal').style.display = 'none';
+
+      if (GAS_ENDPOINT) {
+        fetch(GAS_ENDPOINT, {
+          method: 'POST', mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'login', studentId: idInput, password: pwdInput })
+        }).catch(err => console.log(err));
         
-        <!-- 탭1: 기본인적사항 -->
-        <div id="tab1" class="tab-content" style="display:block;">
-          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800">1. 기본 인적 사항</h2>
-          <div class="border rounded-lg overflow-hidden">
-            <table class="w-full text-left border-collapse">
-              <tbody>
-                <tr class="border-b">
-                  <th class="bg-gray-50 p-4 border-r w-1/6 font-bold text-center">성명</th>
-                  <td class="p-0 border-r w-1/3"><input type="text" id="b-name" onchange="updateBasicInfo('name',this.value)" class="w-full h-full p-4 outline-none"></td>
-                  <th class="bg-gray-50 p-4 border-r w-1/6 font-bold text-center">연락처</th>
-                  <td class="p-0"><input type="text" id="b-phone" onchange="updateBasicInfo('phone',this.value)" class="w-full h-full p-4 outline-none"></td>
-                </tr>
-                <tr class="border-b">
-                  <th class="bg-gray-50 p-4 border-r font-bold text-center">진로희망</th>
-                  <td class="p-0 border-r" colspan="3"><input type="text" id="b-career" onchange="updateBasicInfo('career',this.value)" class="w-full h-full p-4 outline-none"></td>
-                </tr>
-                <tr class="border-b">
-                  <th class="bg-gray-50 p-4 border-r font-bold text-center">관심 대학</th>
-                  <td class="p-0 border-r"><input type="text" id="b-uni" onchange="updateBasicInfo('university',this.value)" class="w-full h-full p-4 outline-none"></td>
-                  <th class="bg-gray-50 p-4 border-r font-bold text-center">관심 학과</th>
-                  <td class="p-0"><input type="text" id="b-major" onchange="updateBasicInfo('major',this.value)" class="w-full h-full p-4 outline-none"></td>
-                </tr>
-                <tr>
-                  <th class="bg-gray-50 p-4 border-r font-bold text-center" rowspan="3">동아리</th>
-                  <th class="bg-gray-50 p-3 border-r border-b text-center text-sm w-24">1학년</th>
-                  <td class="p-0 border-b" colspan="2"><input type="text" id="b-club1" onchange="updateBasicInfo('club1',this.value)" class="w-full h-full p-3 outline-none"></td>
-                </tr>
-                <tr>
-                  <th class="bg-gray-50 p-3 border-r border-b text-center text-sm w-24">2학년</th>
-                  <td class="p-0 border-b" colspan="2"><input type="text" id="b-club2" onchange="updateBasicInfo('club2',this.value)" class="w-full h-full p-3 outline-none"></td>
-                </tr>
-                <tr>
-                  <th class="bg-gray-50 p-3 border-r text-center text-sm w-24">3학년</th>
-                  <td class="p-0" colspan="2"><input type="text" id="b-club3" onchange="updateBasicInfo('club3',this.value)" class="w-full h-full p-3 outline-none"></td>
-                </tr>
-              </tbody>
-            </table>
+        // 백그라운드에서 해당 학생의 최신 데이터를 미리 불러와서 PDF 저장용으로 대비
+        fetchLatestDataForPDF(); 
+      }
+      
+      if (isTeacher) refreshStudentSubmissions();
+      btn.innerText = "탐구 시작";
+    }
+
+    function logout() {
+      currentStudentId = "";
+      currentPassword = "";
+      currentLoginRole = 'student';
+      latestFetchedData = null;
+      document.getElementById('inputStudentId').value = "";
+      document.getElementById('inputPassword').value = "";
+      document.getElementById('btnTeacherDash').style.display = "none";
+      document.getElementById('studentDisplay').innerText = "로그인 대기 중";
+      document.getElementById('loginModal').style.display = 'flex';
+      
+      // 입력창 초기화
+      document.querySelectorAll('textarea').forEach(ta => { ta.value = ''; ta.style.height = 'auto'; });
+      document.getElementById('imagePreview').style.display = 'none';
+      document.getElementById('imagePreview').src = '';
+      uploadedImageBase64 = "";
+    }
+
+    /* =========================================================================
+       3. 데이터 통신 (저장 및 불러오기)
+       ========================================================================= */
+    function submitTabAnswers(tabName) {
+      if (!GAS_ENDPOINT) { alert("저장 기능이 연결되지 않았습니다."); return; }
+      
+      let payload = { action: 'submitTab' + tabName.replace('tab',''), studentId: currentStudentId };
+      const statusSpan = document.getElementById(tabName + '_status');
+      statusSpan.style.color = "var(--primary-light)";
+      statusSpan.innerText = "저장 중...";
+
+      if (tabName === 'tab1') {
+        payload.q1 = document.getElementById('tab1_q1').value;
+        payload.q2 = document.getElementById('tab1_q2').value;
+      } else if (tabName === 'tab2') {
+        payload.q1 = document.getElementById('tab2_q1').value;
+        payload.q2 = document.getElementById('tab2_q2').value;
+        payload.q3 = document.getElementById('tab2_q3').value;
+      } else if (tabName === 'tab3') {
+        payload.imageBase64 = uploadedImageBase64;
+        payload.q2_depth = document.getElementById('tab3_q2').value;
+      }
+
+      fetch(GAS_ENDPOINT, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(() => {
+        statusSpan.style.color = "var(--success)";
+        statusSpan.innerText = "✓ 성공적으로 제출되었습니다!";
+        fetchLatestDataForPDF(); // 성공 후 최신 데이터 갱신
+        setTimeout(() => statusSpan.innerText = "", 3000);
+      }).catch(() => {
+        statusSpan.style.color = "var(--accent)";
+        statusSpan.innerText = "제출 실패";
+      });
+    }
+
+    // 학생 개별 최신 데이터 백그라운드 로드 (PDF용)
+    function fetchLatestDataForPDF() {
+      if (!GAS_ENDPOINT || currentLoginRole === 'teacher') return;
+      fetch(GAS_ENDPOINT + "?action=getFullSubmissions")
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.submissions) {
+            // 서버에서 넘어온 submissions 중 내 아이디(가장 최신값만 들어있음) 찾기
+            const myData = data.submissions.find(s => s.id == currentStudentId);
+            if(myData) latestFetchedData = myData;
+          }
+        }).catch(err => console.log("최신 데이터 동기화 실패"));
+    }
+
+    /* =========================================================================
+       4. PDF 생성 로직 (A4 최적화 및 최신 데이터 반영)
+       ========================================================================= */
+    function generatePDF() {
+      if (!currentStudentId) { alert("로그인 후 이용해 주세요."); return; }
+
+      // 1순위: 서버에서 방금 가져온 최신 데이터. 2순위: 현재 화면 입력값
+      const data = latestFetchedData || {};
+      
+      const q1_1 = data.tab1_q1 || document.getElementById('tab1_q1').value.trim() || "(작성된 내용 없음)";
+      const q1_2 = data.tab1_q2 || document.getElementById('tab1_q2').value.trim() || "(작성된 내용 없음)";
+      const q2_1 = data.tab2_q1 || document.getElementById('tab2_q1').value.trim() || "(작성된 내용 없음)";
+      const q2_2 = data.tab2_q2 || document.getElementById('tab2_q2').value.trim() || "(작성된 내용 없음)";
+      const q2_3 = data.tab2_q3 || document.getElementById('tab2_q3').value.trim() || "(작성된 내용 없음)";
+      const q3_2 = data.tab3_q2 || document.getElementById('tab3_q2').value.trim() || "(작성된 내용 없음)";
+      const imgSrc = data.tab3_img && data.tab3_img.startsWith('data:image') ? data.tab3_img : uploadedImageBase64;
+
+      // A4 용지에 완벽히 맞추기 위한 고정 폭 컨테이너 (190mm)
+      const reportDiv = document.createElement('div');
+      reportDiv.style.width = '190mm'; 
+      reportDiv.style.padding = '10mm 15mm';
+      reportDiv.style.fontFamily = '-apple-system, sans-serif';
+      reportDiv.style.color = '#1e293b';
+      reportDiv.style.lineHeight = '1.6';
+      reportDiv.style.fontSize = '12pt';
+      reportDiv.style.background = 'white';
+
+      let imgTag = imgSrc 
+        ? `<div style="text-align:center; margin:10px 0;"><img src="${imgSrc}" style="max-width:100%; max-height:220px; border:1px solid #cbd5e1; border-radius:4px;" /></div>`
+        : `<p style="color:#dc2626; font-size:10pt;">* 첨부된 진앙 작도 이미지가 없습니다.</p>`;
+
+      reportDiv.innerHTML = `
+        <div style="border-bottom: 2px solid #1e3a8a; padding-bottom: 8px; margin-bottom: 15px;">
+          <h1 style="font-size: 18pt; color: #1e3a8a; margin: 0 0 5px 0; text-align:center;">지구시스템과학 탐구활동 보고서</h1>
+          <div style="display: flex; justify-content: space-between; font-size: 10pt; color: #475569;">
+            <span><strong>작성자(학번):</strong> ${currentStudentId}</span>
+            <span><strong>출력 일시:</strong> ${new Date().toLocaleString()}</span>
           </div>
         </div>
 
-        <!-- 탭2: 학업역량 -->
-        <div id="tab2" class="tab-content" style="display:none;">
-          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">2. 학업역량 관리</h2>
-          
-          <h3 class="text-lg font-bold mb-2 text-blue-800">내신 교과 성적 현황</h3>
-          <table class="w-full border-collapse">
-            <thead>
-              <tr class="bg-gray-100 border text-center">
-                <th class="border p-2">구분</th><th class="border p-2">5등급</th><th class="border p-2">9등급</th><th class="border p-2">종합</th>
-              </tr>
-            </thead>
-            <tbody id="grade-tbody"></tbody>
-          </table>
-          <div class="mb-10 border-x border-b p-2 bg-gray-50">
-            <span class="font-bold text-sm block mb-1">특기 사항</span>
-            <textarea id="grade-notes" class="w-full p-2 border outline-none auto-resize" oninput="autoResizeTextarea(this)" onchange="updateGradeNotes(this.value)"></textarea>
+        <div style="margin-bottom: 15px;">
+          <h2 style="font-size: 13pt; color: #1e3a8a; border-left: 4px solid #3b82f6; padding-left: 8px; margin-bottom: 8px;">1. P파 주행시간 기초자료 및 지각 두께</h2>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px; margin-bottom: 8px;">
+            <p style="font-weight: bold; margin-bottom: 4px; font-size: 11pt;">[Q1] 교차 거리</p>
+            <p style="white-space: pre-wrap; font-size: 10.5pt; margin: 0; background: white; padding: 6px; border: 1px solid #e2e8f0;">${q1_1}</p>
           </div>
-
-          <h3 class="text-lg font-bold mb-2 text-blue-800">전국연합 학력평가 성적 현황</h3>
-          <table class="w-full border-collapse mb-10 text-sm">
-            <thead>
-              <tr class="bg-gray-100 border text-center">
-                <th class="border p-2 w-16" rowspan="2">학년</th>
-                <th class="border p-2 w-16" rowspan="2">구분</th>
-                <th class="border p-1" colspan="2">국어</th><th class="border p-1" colspan="2">수학</th><th class="border p-1" colspan="2">영어</th>
-                <th class="border p-1" colspan="2">사탐</th><th class="border p-1" colspan="2">과탐</th>
-                <th class="border p-2 w-12" rowspan="2">백분위<br>평균</th>
-                <th class="border p-2 w-12" rowspan="2">등급<br>평균</th>
-              </tr>
-              <tr class="bg-gray-100 border text-center text-xs">
-                <th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th><th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th>
-                <th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th><th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th>
-                <th class="border p-1 w-12">백분위</th><th class="border p-1 w-12">등급</th>
-              </tr>
-            </thead>
-            <tbody id="mock-exam-tbody"></tbody>
-          </table>
-
-          <h3 class="text-lg font-bold mb-2 text-blue-800">교육과정 이수 현황 (2022 개정)</h3>
-          <div id="curriculum-list"></div>
-          <button onclick="addRow('academic', 'curriculum')" class="no-print mt-3 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 이수 과목 추가</button>
-        </div>
-
-        <!-- 탭3: 진로역량 -->
-        <div id="tab3" class="tab-content" style="display:none;">
-          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">3. 진로역량 관리</h2>
-          
-          <h3 class="text-lg font-bold mb-3 text-blue-800 bg-blue-50 p-2 rounded">3-1. 진로탐색활동 (전공탐색/진로체험)</h3>
-          <div id="exploration-list"></div>
-          <button onclick="addRow('career', 'exploration', 15)" class="no-print mb-10 mt-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 활동 추가</button>
-
-          <h3 class="text-lg font-bold mb-3 text-blue-800 bg-blue-50 p-2 rounded">3-2. 자기주도적 탐구활동</h3>
-          <p class="text-sm text-gray-500 mb-4 no-print">* 탐구유형: 학술자료조사 / 실험·실습 / 데이터분석 / 융합·실천</p>
-          <div id="self-directed-list"></div>
-          <button onclick="addRow('career', 'selfDirected', 15)" class="no-print mt-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 탐구활동 추가</button>
-        </div>
-
-        <!-- 탭4: 공동체역량 -->
-        <div id="tab4" class="tab-content" style="display:none;">
-          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">4. 공동체역량 관리</h2>
-          <table class="w-full border-collapse">
-            <thead>
-              <tr class="bg-gray-100 border">
-                <th class="border p-2 w-20">구분</th>
-                <th class="border p-2 w-24">하위 항목</th>
-                <th class="border p-2 w-1/6">본인의 주도적 역할</th>
-                <th class="border p-2 w-1/4">구체적인 활동 내용</th>
-                <th class="border p-2 w-1/4">역량 평가 (성장/교훈)</th>
-                <th class="border p-2 w-20">활동 시기</th>
-                <th class="border p-2 w-24">기재 영역</th>
-              </tr>
-            </thead>
-            <tbody id="community-tbody"></tbody>
-          </table>
-        </div>
-
-        <!-- 탭5: 독서활동 -->
-        <div id="tab5" class="tab-content" style="display:none;">
-          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">5. 독서활동상황 관리</h2>
-          <div id="reading-list"></div>
-          <button onclick="addRow('reading', null, 30)" class="no-print mt-4 bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-bold shadow-sm">+ 독서 기록 추가</button>
-        </div>
-
-        <!-- 탭6: 참고자료 -->
-        <div id="tab6" class="tab-content no-print" style="display:none;">
-          <h2 class="text-2xl font-bold mb-6 border-l-4 border-blue-600 pl-3 text-gray-800 mt-10">6. 참고용 자료 (탐구활동 분류 가이드)</h2>
-          
-          <h3 class="font-bold text-lg mb-3 mt-6">■ 학생부 탐구활동 관리표 (추천 분류)</h3>
-          <table class="w-full border-collapse mb-8 text-sm text-left shadow-sm">
-            <thead>
-              <tr class="bg-blue-800 text-white border"><th class="border p-3 w-1/4">탐구유형</th><th class="border p-3">주요 활동</th><th class="border p-3">학생부 사례</th><th class="border p-3">대학이 높게 평가하는 요소</th></tr>
-            </thead>
-            <tbody>
-              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">① 학술자료 조사·분석형</td><td class="border p-3 bg-white">논문, 학술자료, 통계자료, 도서 등을 활용하여 탐구</td><td class="border p-3 bg-white">교과 탐구보고서, 독서 연계 탐구, 사회문화 조사, 역사 탐구</td><td class="border p-3 bg-white">자료의 신뢰성, 다양한 출처 활용, 비판적 분석</td></tr>
-              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">② 실험·실습·제작형</td><td class="border p-3 bg-white">실험, 프로그래밍, 제작, 설계, 모델링</td><td class="border p-3 bg-white">과학 실험, 공학 설계, 메이커 활동, 코딩 프로젝트</td><td class="border p-3 bg-white">문제 해결 과정, 시행착오, 결과 분석</td></tr>
-              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">③ 현장조사 데이터 분석형</td><td class="border p-3 bg-white">설문조사, 인터뷰, 관찰, 빅데이터 분석</td><td class="border p-3 bg-white">사회문제 조사, 지역사회 프로젝트, 경제 통계 분석</td><td class="border p-3 bg-white">연구 설계, 데이터 해석 능력</td></tr>
-              <tr><td class="border p-3 font-bold bg-blue-50 text-blue-900">④ 융합·실천·확장형</td><td class="border p-3 bg-white">탐구 결과를 실제 문제 해결이나 캠페인, 교육자료 제작 등으로 연결</td><td class="border p-3 bg-white">학급특색사업, 정책 제안, 캠페인, 교육 콘텐츠 제작</td><td class="border p-3 bg-white">탐구의 확장성, 사회적 가치, 실전성</td></tr>
-            </tbody>
-          </table>
-
-          <h3 class="font-bold text-lg mb-3 mt-8">■ 탐구활동 유형별 키워드 및 대표 전공</h3>
-          <div class="grid grid-cols-2 gap-6">
-            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
-              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">① 학술자료 조사·분석형</div>
-              <div class="p-5 text-sm text-gray-700 leading-relaxed">
-                <b class="text-blue-800">대표 키워드:</b> 논문 분석, 선행연구 조사, 문헌 연구, 독서 연계, 통계자료 분석, 기사 분석, 역사자료 분석<br><br>
-                <b class="text-blue-800">대표 전공:</b> 인문, 사회, 경영, 경제, 법학
-              </div>
-            </div>
-            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
-              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">② 실험·실습·제작형</div>
-              <div class="p-5 text-sm text-gray-700 leading-relaxed">
-                <b class="text-blue-800">대표 키워드:</b> 실험설계, 변수통제, 제작, 프로그래밍, 모델링, 공학설계, 시뮬레이션, AI, 발명<br><br>
-                <b class="text-blue-800">대표 전공:</b> 자연과학, 공학, 의학, ICT
-              </div>
-            </div>
-            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
-              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">③ 현장조사 데이터 분석형</div>
-              <div class="p-5 text-sm text-gray-700 leading-relaxed">
-                <b class="text-blue-800">대표 키워드:</b> 설문조사, 인터뷰, 현장답사, 관찰, GIS, 공공데이터 분석, 빅데이터 분석, 통계, 사례연구<br><br>
-                <b class="text-blue-800">대표 전공:</b> 사회과학, 행정, 심리, 도시, 환경
-              </div>
-            </div>
-            <div class="border border-blue-200 rounded-lg shadow-sm bg-white overflow-hidden">
-              <div class="bg-blue-100 p-3 font-bold text-blue-900 border-b border-blue-200 text-center text-lg">④ 융합·실천·확장형</div>
-              <div class="p-5 text-sm text-gray-700 leading-relaxed">
-                <b class="text-blue-800">대표 키워드:</b> 캠페인, 정책제안, 교육자료 제작, 봉사 연계, 창업 아이디어, 지역사회 연계 프로젝트, 콘텐츠 제작, 전시회<br><br>
-                <b class="text-blue-800">대표 전공:</b> 교육, 미디어, 디자인, 경영, 융합학문
-              </div>
-            </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px;">
+            <p style="font-weight: bold; margin-bottom: 4px; font-size: 11pt;">[Q2] 지각 두께 계산 과정</p>
+            <p style="white-space: pre-wrap; font-size: 10.5pt; margin: 0; background: white; padding: 6px; border: 1px solid #e2e8f0;">${q1_2}</p>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- 교사 화면 -->
-<div id="teacher-screen" class="hidden min-h-screen bg-gray-200 p-8">
-  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-8">
-    <div class="flex justify-between items-center mb-8 border-b pb-4">
-      <h1 class="text-3xl font-extrabold text-blue-900 flex items-center gap-3">교사 대시보드 (전체 학생 목록)</h1>
-      <button onclick="location.reload()" class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-md font-bold">로그아웃</button>
-    </div>
+        <div style="margin-bottom: 15px;">
+          <h2 style="font-size: 13pt; color: #1e3a8a; border-left: 4px solid #3b82f6; padding-left: 8px; margin-bottom: 8px;">2. 주시곡선 심층 해석</h2>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px; margin-bottom: 8px;">
+            <p style="font-weight: bold; margin-bottom: 4px; font-size: 11pt;">[Q1] 굴절파 추세선 기울기 차이</p>
+            <p style="white-space: pre-wrap; font-size: 10.5pt; margin: 0; background: white; padding: 6px; border: 1px solid #e2e8f0;">${q2_1}</p>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px; margin-bottom: 8px;">
+            <p style="font-weight: bold; margin-bottom: 4px; font-size: 11pt;">[Q2] 시간 절편(t₀)의 의미</p>
+            <p style="white-space: pre-wrap; font-size: 10.5pt; margin: 0; background: white; padding: 6px; border: 1px solid #e2e8f0;">${q2_2}</p>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px;">
+            <p style="font-weight: bold; margin-bottom: 4px; font-size: 11pt;">[Q3] 물리량 변화와 교차 거리(D) 관계</p>
+            <p style="white-space: pre-wrap; font-size: 10.5pt; margin: 0; background: white; padding: 6px; border: 1px solid #e2e8f0;">${q2_3}</p>
+          </div>
+        </div>
+
+        <div class="html2pdf__page-break"></div>
+
+        <div>
+          <h2 style="font-size: 13pt; color: #1e3a8a; border-left: 4px solid #3b82f6; padding-left: 8px; margin-bottom: 8px;">3. 진앙 및 진원 깊이 결정</h2>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px; margin-bottom: 8px;">
+            <p style="font-weight: bold; margin-bottom: 4px; font-size: 11pt;">[작도 결과 이미지]</p>
+            ${imgTag}
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px;">
+            <p style="font-weight: bold; margin-bottom: 4px; font-size: 11pt;">[진원 깊이 산출 풀이]</p>
+            <p style="white-space: pre-wrap; font-size: 10.5pt; margin: 0; background: white; padding: 6px; border: 1px solid #e2e8f0;">${q3_2}</p>
+          </div>
+        </div>
+      `;
+
+      // A4 용지에 여백(Margin)을 딱 맞추는 최적화 옵션
+      const opt = {
+        margin:       [10, 0, 10, 0], // Top, Right, Bottom, Left (밀리미터)
+        filename:     `지구시스템과학보고서_${studentId}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true, windowWidth: 800 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      // 잠시 화면에 렌더링했다가 제거(완벽한 CSS 적용을 위해)
+      document.body.appendChild(reportDiv);
+      html2pdf().set(opt).from(reportDiv).save().then(() => {
+        document.body.removeChild(reportDiv);
+      });
+    }
+
+    /* =========================================================================
+       5. 차트 & UI 제어
+       ========================================================================= */
+    const baseTimeSec = 48 * 60 + 49.4;
+    const rawStations = [
+      { id: 1, dist: 45.8, arrStr: "48분 57.4초", arrSec: 48*60 + 57.4 }, { id: 2, dist: 59.8, arrStr: "49분 00.3초", arrSec: 49*60 + 0.3 },
+      { id: 3, dist: 90.5, arrStr: "49분 04.9초", arrSec: 49*60 + 4.9 }, { id: 4, dist: 109.3, arrStr: "49분 08.5초", arrSec: 49*60 + 8.5 },
+      { id: 5, dist: 123.0, arrStr: "49분 10.4초", arrSec: 49*60 + 10.4 }, { id: 6, dist: 138.7, arrStr: "49분 16.0초", arrSec: 49*60 + 16.0 },
+      { id: 7, dist: 150.1, arrStr: "49분 15.8초", arrSec: 49*60 + 15.8 }, { id: 8, dist: 188.6, arrStr: "49분 19.9초", arrSec: 49*60 + 19.9 },
+      { id: 9, dist: 199.4, arrStr: "49분 24.0초", arrSec: 49*60 + 24.0 }, { id: 10, dist: 201.7, arrStr: "49분 22.4초", arrSec: 49*60 + 22.4 },
+      { id: 11, dist: 224.8, arrStr: "49분 24.0초", arrSec: 49*60 + 24.0 }, { id: 12, dist: 239.4, arrStr: "49분 27.0초", arrSec: 49*60 + 27.0 },
+      { id: 13, dist: 250.0, arrStr: "49분 31.9초", arrSec: 49*60 + 31.9 }, { id: 14, dist: 251.0, arrStr: "49분 32.4초", arrSec: 49*60 + 32.4 },
+      { id: 15, dist: 298.0, arrStr: "49분 34.6초", arrSec: 49*60 + 34.6 }, { id: 16, dist: 300.0, arrStr: "49분 36.3초", arrSec: 49*60 + 36.3 },
+      { id: 17, dist: 308.2, arrStr: "49분 37.7초", arrSec: 49*60 + 37.7 }, { id: 18, dist: 337.5, arrStr: "49분 40.3초", arrSec: 49*60 + 40.3 },
+      { id: 19, dist: 347.0, arrStr: "49분 42.7초", arrSec: 49*60 + 42.7 }, { id: 20, dist: 366.7, arrStr: "49분 45.5초", arrSec: 49*60 + 45.5 },
+      { id: 21, dist: 402.0, arrStr: "49분 49.5초", arrSec: 49*60 + 49.5 }, { id: 22, dist: 446.4, arrStr: "49분 54.4초", arrSec: 49*60 + 54.4 }
+    ];
+    const stationData = rawStations.map(st => ({ ...st, travelTime: Number((st.arrSec - baseTimeSec).toFixed(1)) }));
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      stationData.forEach(st => {
+        tbody.insertAdjacentHTML('beforeend', `<tr><td><strong>#${st.id}</strong></td><td>${st.dist.toFixed(1)}</td><td>${st.arrStr}</td><td><strong style="color:var(--primary);">${st.travelTime.toFixed(1)}</strong></td></tr>`);
+      });
+    }
+
+    function switchTab(index) {
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
+      document.querySelectorAll('.tab-pane').forEach((pane, i) => pane.classList.toggle('active', i === index));
+      if (index === 0 && tab1Chart) setTimeout(() => tab1Chart.resize(), 100);
+      else if (index === 1 && chart) setTimeout(() => chart.resize(), 100);
+      else if (index === 2 && leafletMap) setTimeout(() => leafletMap.invalidateSize(), 150);
+    }
+
+    function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+    function handleImageUpload(e) {
+      if (e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = evt => { uploadedImageBase64 = evt.target.result; document.getElementById('imagePreview').src = uploadedImageBase64; document.getElementById('imagePreview').style.display = 'block'; };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    }
+
+    /* =========================================================================
+       6. 차트 및 시뮬레이션 물리 모델 (1:1 Isotropic 등방성 완벽 렌더링)
+       ========================================================================= */
+    let chart, tab1Chart, currentV1 = 5.6, currentV2 = 8.0, currentD = 208, currentThickness = 41.9;
+
+    function initCharts() {
+      const pgPts = stationData.filter(d => d.dist <= 208).map(d => ({ x: d.dist, y: d.travelTime }));
+      const pnPts = stationData.filter(d => d.dist > 208).map(d => ({ x: d.dist, y: d.travelTime }));
+
+      const opt1 = { responsive: true, maintainAspectRatio: false, plugins: { legend:{position:'top'} }, scales: { x: { type: 'linear', min: 0, max: 480 }, y: { min: 0, max: 70 } } };
+      tab1Chart = new Chart(document.getElementById('tab1Chart').getContext('2d'), { type: 'scatter', data: { datasets: [
+        { label: 'Pg', data: pgPts, backgroundColor: '#2563eb' }, { label: 'Pn', data: pnPts, backgroundColor: '#dc2626' },
+        { type: 'line', label: 'Pg 선', data: [{x:0,y:0},{x:230,y:230/5.6}], borderColor: '#2563eb', borderDash: [4,4] },
+        { type: 'line', label: 'Pn 선', data: [{x:190,y:190/8+10.9},{x:460,y:460/8+10.9}], borderColor: '#dc2626', borderDash: [4,4] }
+      ]}, options: opt1 });
+
+      const opt2 = { responsive: true, maintainAspectRatio: false, plugins: { legend:{display:false} }, scales: { x: { type: 'linear', min: 0, max: 500 }, y: { min: 0, max: 75 } } };
+      chart = new Chart(document.getElementById('travelTimeChart').getContext('2d'), { type: 'scatter', data: { datasets: [
+        { data: pgPts, backgroundColor: '#2563eb' }, { data: pnPts, backgroundColor: '#dc2626' },
+        { type: 'line', borderColor: '#2563eb', borderWidth: 2 }, { type: 'line', borderColor: '#dc2626', borderWidth: 2 },
+        { backgroundColor: '#8b5cf6', borderColor: '#6d28d9', borderWidth: 2, pointRadius: 7, pointStyle: 'rectRot' }
+      ]}, options: opt2 });
+    }
+
+    function updateAllModels() {
+      currentV1 = parseFloat(document.getElementById('paramV1').value);
+      currentV2 = parseFloat(document.getElementById('paramV2').value);
+      currentD = parseFloat(document.getElementById('paramD').value);
+      document.getElementById('v1Val').innerText = currentV1.toFixed(1) + ' km/s';
+      document.getElementById('v2Val').innerText = currentV2.toFixed(1) + ' km/s';
+      document.getElementById('dVal').innerText = currentD + ' km';
+
+      if (currentV2 > currentV1) currentThickness = (currentD / 2) * Math.sqrt((currentV2 - currentV1) / (currentV2 + currentV1));
+      document.getElementById('calcResultDisplay').innerText = currentThickness.toFixed(1);
+
+      const intercept = (currentD / currentV1) - (currentD / currentV2);
+      if (chart) {
+        chart.data.datasets[2].data = [{x:0,y:0}, {x:500,y:500/currentV1}];
+        chart.data.datasets[3].data = [{x:Math.max(0,currentD-80), y:Math.max(0,currentD-80)/currentV2+intercept}, {x:500,y:500/currentV2+intercept}];
+        chart.data.datasets[4].data = [{x:currentD, y:currentD/currentV1}];
+        chart.update();
+      }
+      updateSimDist();
+    }
+
+    let simAnimationId, simIsPlaying = false, simCurrentTime = 0, targetDist = 260;
+    const simCtx = document.getElementById('waveCanvas').getContext('2d');
+
+    function updateSimDist() {
+      targetDist = parseFloat(document.getElementById('simDist').value);
+      document.getElementById('simDistVal').innerText = targetDist + ' km';
+      const diff = Math.abs((targetDist/currentV2 + (currentD/currentV1 - currentD/currentV2)) - targetDist/currentV1).toFixed(1);
+      document.getElementById('simRaceOutcome').innerHTML = targetDist < currentD 
+        ? `<span style="color:#2563eb;">⚡ 교차 거리(${currentD}km) 이전:</span> 직접파가 ${diff}초 일찍 도달` 
+        : `<span style="color:#dc2626;">⚡ 교차 거리(${currentD}km) 이후:</span> 굴절파가 역전하여 ${diff}초 일찍 도달`;
+      drawSimulationFrame(simCurrentTime);
+    }
+
+    function drawSimulationFrame(t) {
+      const W = simCtx.canvas.width, H = simCtx.canvas.height;
+      simCtx.clearRect(0, 0, W, H);
+      const scale = (W - 80) / 480; // Isotropic Scale (가로세로 1:1 완벽 적용)
+      const startX = 50, startY = 35;
+      const d = currentThickness, mohoY = startY + d * scale;
+
+      simCtx.fillStyle = '#1e293b'; simCtx.fillRect(startX, startY, W-80, d*scale);
+      simCtx.fillStyle = '#0f172a'; simCtx.fillRect(startX, mohoY, W-80, H-mohoY);
+      simCtx.beginPath(); simCtx.strokeStyle = '#8b5cf6'; simCtx.setLineDash([5,4]); simCtx.moveTo(startX, mohoY); simCtx.lineTo(startX+W-80, mohoY); simCtx.stroke(); simCtx.setLineDash([]);
+      simCtx.strokeStyle = '#64748b'; simCtx.beginPath(); simCtx.moveTo(startX, startY); simCtx.lineTo(startX+W-80, startY); simCtx.stroke();
+      
+      simCtx.fillStyle = '#ef4444'; simCtx.beginPath(); simCtx.arc(startX, startY, 7, 0, 7); simCtx.fill();
+      const stationX = startX + targetDist * scale;
+      simCtx.fillStyle = '#38bdf8'; simCtx.beginPath(); simCtx.arc(stationX, startY, 7, 0, 7); simCtx.fill();
+
+      const ic = Math.asin(currentV1 / currentV2), xEntry = d * Math.tan(ic), slantD = d / Math.cos(ic), tDown = slantD / currentV1;
+      const xExit = Math.max(xEntry, targetDist - xEntry), tMantle = (xExit - xEntry) / currentV2;
+      const dist = currentV1 * t;
+
+      if (t > 0) {
+        // 직접파 파면
+        simCtx.save(); simCtx.rect(startX, startY, W-80, d*scale); simCtx.clip();
+        [0,8,16].forEach((o,i) => { if(dist-o>0) { simCtx.beginPath(); simCtx.arc(startX, startY, (dist-o)*scale, 0, 3.14); simCtx.strokeStyle = i===0?'rgba(59,130,246,0.8)':'rgba(96,165,250,0.2)'; simCtx.lineWidth=i===0?3:1; simCtx.stroke(); }});
+        simCtx.restore();
+
+        // 굴절파 파면
+        if (t < tDown) {
+          simCtx.save(); simCtx.rect(startX, startY, W-80, d*scale); simCtx.clip();
+          [0,8,16].forEach((o,i) => { if(dist-o>0) { simCtx.beginPath(); simCtx.arc(startX, startY, (dist-o)*scale, ic-0.5, ic+0.5); simCtx.strokeStyle = i===0?'rgba(239,68,68,0.9)':'rgba(252,165,165,0.3)'; simCtx.lineWidth=i===0?3:1; simCtx.stroke(); }});
+          simCtx.restore();
+        } else {
+          const mDist = currentV2 * (t - tDown), curMFrontX = xEntry + mDist;
+          simCtx.save(); simCtx.rect(startX, mohoY, W-80, H-mohoY); simCtx.clip();
+          [0,10,20].forEach((o,i) => { if(mDist-o>0) { simCtx.beginPath(); simCtx.arc(startX+xEntry*scale, mohoY, (mDist-o)*scale, 0, 3.14); simCtx.strokeStyle = i===0?'rgba(239,68,68,0.8)':'rgba(252,165,165,0.3)'; simCtx.lineWidth=i===0?2:1; simCtx.stroke(); }});
+          simCtx.restore();
+          
+          simCtx.save(); simCtx.rect(startX, startY, W-80, d*scale); simCtx.clip();
+          [0,12,24].forEach((o,i) => { const fX = curMFrontX - o; if(fX > xEntry) { simCtx.beginPath(); simCtx.strokeStyle=i===0?'rgba(248,113,113,0.9)':'rgba(252,165,165,0.3)'; simCtx.lineWidth=i===0?2:1; simCtx.moveTo(startX+fX*scale, mohoY); simCtx.lineTo(startX+(fX-d/Math.tan(ic))*scale, startY); simCtx.stroke(); }});
+          simCtx.restore();
+        }
+      }
+
+      // 파티클 (파란점/빨간점)
+      simCtx.fillStyle='#2563eb'; simCtx.beginPath(); simCtx.arc(startX + Math.min(targetDist, dist)*scale, startY, 6, 0, 7); simCtx.fill();
+      let rx, ry;
+      if (t < tDown) { rx = dist * Math.sin(ic); ry = dist * Math.cos(ic); }
+      else if (t < tDown + tMantle) { rx = xEntry + currentV2*(t-tDown); ry = d; }
+      else if (t < tDown + tMantle + tDown) { const u = currentV1*(t-tDown-tMantle); rx = xExit + u*Math.sin(ic); ry = d - u*Math.cos(ic); }
+      else { rx = targetDist; ry = 0; }
+      simCtx.fillStyle='#dc2626'; simCtx.beginPath(); simCtx.arc(startX + rx*scale, startY + ry*scale, 6, 0, 7); simCtx.fill();
+      
+      document.getElementById('simTimer').innerText = `시간: ${t.toFixed(1)} 초`;
+    }
+
+    function simStep() {
+      if(!simIsPlaying) return;
+      simCurrentTime += 0.28;
+      if(simCurrentTime > Math.max(targetDist/currentV1, targetDist/currentV2 + 20) + 2) {
+        simIsPlaying = false; simCurrentTime = 0; document.getElementById('btnPlaySim').innerText = '재생'; drawSimulationFrame(0); return;
+      }
+      drawSimulationFrame(simCurrentTime);
+      simAnimationId = requestAnimationFrame(simStep);
+    }
+    function toggleSim() { simIsPlaying = !simIsPlaying; document.getElementById('btnPlaySim').innerText = simIsPlaying?'일시정지':'재생'; if(simIsPlaying) simStep(); }
+
+    /* =========================================================================
+       7. 지도 (진앙결정)
+       ========================================================================= */
+    let leafletMap = null, stationCircles = [];
+    const geoStations = { A: {lat:37.4563, lng:126.7052, color:"#2563eb"}, B: {lat:35.1796, lng:129.0756, color:"#9333ea"}, C: {lat:35.1595, lng:126.8526, color:"#16a34a"} };
+
+    function initLeafletMap() {
+      leafletMap = L.map('map', {preferCanvas:true}).setView([36.3, 127.9], 7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:18, crossOrigin:true}).addTo(leafletMap);
+      Object.values(geoStations).forEach(st => L.circleMarker([st.lat, st.lng], {radius:8, fillColor:st.color, color:"#fff", weight:2, fillOpacity:0.9}).addTo(leafletMap));
+    }
     
-    <div class="mb-6 flex gap-4">
-      <input type="text" id="search-input" onkeyup="renderTeacherTable()" placeholder="이름 또는 학번으로 학생 검색..." class="border border-gray-300 p-3 rounded-md w-1/3 outline-none">
-    </div>
+    function drawEpicenterCircles() {
+      resetMapCircles();
+      const ids = [parseInt(document.getElementById('selectIncheon').value), parseInt(document.getElementById('selectBusan').value), parseInt(document.getElementById('selectGwangju').value)];
+      const sts = [geoStations.A, geoStations.B, geoStations.C];
+      ids.forEach((id, i) => {
+        const d = rawStations.find(s=>s.id===id).dist;
+        const R = Math.sqrt(d*d + 48*48);
+        stationCircles.push(L.circle([sts[i].lat, sts[i].lng], {radius: R*1000, color:sts[i].color, fillColor:sts[i].color, fillOpacity:0.1, weight:2.5}).addTo(leafletMap));
+      });
+    }
+    function resetMapCircles() { stationCircles.forEach(c=>leafletMap.removeLayer(c)); stationCircles=[]; }
 
-    <div class="bg-white rounded-lg border overflow-hidden">
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="bg-blue-50 border-b">
-            <th class="p-4 font-bold text-center text-blue-900">학번</th>
-            <th class="p-4 font-bold text-center text-blue-900">이름</th>
-            <th class="p-4 font-bold text-center text-blue-900">희망진로</th>
-            <th class="p-4 font-bold text-center text-blue-900">포트폴리오 관리</th>
-          </tr>
-        </thead>
-        <tbody id="teacher-tbody" class="divide-y divide-gray-200"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
+    function saveMapAsImage() {
+      const btn = document.querySelector('button[onclick="saveMapAsImage()"]');
+      const text = btn.innerText; btn.innerText = "⏳ 캡처 중..."; btn.disabled = true;
+      html2canvas(document.getElementById('map'), {useCORS:true, scale:2}).then(canvas => {
+        const a = document.createElement('a'); a.download = `진앙지도_${currentStudentId}.png`; a.href = canvas.toDataURL("image/png"); a.click();
+      }).finally(() => { btn.innerText = text; btn.disabled = false; });
+    }
 
-<!-- 교사용 학생 상세 조회 모달 -->
-<div id="print-modal" class="hidden fixed inset-0 bg-white z-40 overflow-y-auto pb-20">
-  <div class="no-print bg-blue-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
-    <h2 id="modal-title" class="text-xl font-bold">학생 포트폴리오</h2>
-    <div>
-      <button onclick="window.print()" class="bg-indigo-500 hover:bg-indigo-600 px-5 py-2 rounded font-bold mr-3">인쇄하기(PDF)</button>
-      <button onclick="saveTeacherNotes()" class="bg-green-500 hover:bg-green-600 px-5 py-2 rounded font-bold mr-3">특이사항 및 수정내용 저장</button>
-      <button onclick="closeStudentModal()" class="bg-red-500 hover:bg-red-600 px-5 py-2 rounded font-bold">닫기</button>
-    </div>
-  </div>
-  
-  <div class="p-10 max-w-5xl mx-auto relative print-container">
+    /* =========================================================================
+       교사용 대시보드 렌더링
+       ========================================================================= */
+    let allSubmissionsData = [];
+    function openTeacherDashboard() { document.getElementById('teacherDashboardModal').style.display='flex'; refreshStudentSubmissions(); }
+    function closeTeacherDashboard() { document.getElementById('teacherDashboardModal').style.display='none'; }
+    function openGoogleSheetLink() { if(GAS_ENDPOINT) window.open(GAS_ENDPOINT, '_blank'); }
+
+    function refreshStudentSubmissions() {
+      if(GAS_ENDPOINT) {
+        fetch(GAS_ENDPOINT + "?action=getFullSubmissions").then(r=>r.json()).then(d => {
+          allSubmissionsData = d.submissions || []; renderStudentList();
+        });
+      }
+    }
     
-    <div class="text-center font-extrabold text-3xl mb-12 text-black">생각의 지도 큐레이팅 포트폴리오</div>
-    
-    <div id="modal-form-container"></div>
-    
-    <div class="mt-12 border-2 border-red-200 p-5 bg-red-50 rounded-lg print:border-gray-400 print:bg-transparent">
-      <h3 class="font-bold text-red-700 mb-2 print:text-black">특이사항 (교사 전용 기재란)</h3>
-      <textarea id="m-teacher-notes" oninput="autoResizeTextarea(this)" placeholder="학생부 반영용 특이사항 등을 자유롭게 기재하세요." class="w-full p-3 border border-red-200 rounded auto-resize outline-none bg-white print:border-none print:p-0 print:overflow-hidden print:resize-none"></textarea>
-    </div>
-  </div>
-</div>
+    function renderStudentList() {
+      const c = document.getElementById('teacherStudentListContainer'); c.innerHTML='';
+      allSubmissionsData.forEach(st => {
+        const d = document.createElement('div');
+        d.style.cssText = "padding:12px; margin-bottom:8px; border-radius:8px; background:white; border:1px solid #cbd5e1; cursor:pointer;";
+        d.innerHTML = `<strong>${st.id}</strong> <div style="font-size:0.8rem; color:#64748b;">${st.time}</div>`;
+        d.onclick = () => renderDetail(st);
+        c.appendChild(d);
+      });
+    }
 
-<!-- 우측 하단 세일고 로고 -->
-<div class="fixed bottom-5 right-6 flex items-center gap-2 z-40 no-print bg-white/90 px-4 py-2 rounded-full shadow-md backdrop-blur-sm border border-gray-200">
-  <img src="세일고CI-01.png" alt="세일고 로고" class="w-6 h-6 object-contain">
-  <span class="font-bold text-sm" style="color: #b42814;">세일고등학교</span>
-</div>
+    function renderDetail(st) {
+      document.getElementById('teacherStudentDetailContainer').innerHTML = `
+        <div style="background:white; padding:20px; border-radius:10px; border:1px solid #e2e8f0;">
+          <h3 style="border-bottom:2px solid #1e3a8a; padding-bottom:10px; margin-bottom:15px; color:#1e3a8a;">학번: ${st.id} <span style="font-size:0.9rem; color:#64748b; font-weight:normal; margin-left:10px;">(${st.time})</span></h3>
+          <p><strong>[1-Q1]</strong> ${st.tab1_q1}</p><p><strong>[1-Q2]</strong> ${st.tab1_q2}</p><hr style="margin:15px 0; border-top:1px dashed #cbd5e1;">
+          <p><strong>[2-Q1]</strong> ${st.tab2_q1}</p><p><strong>[2-Q2]</strong> ${st.tab2_q2}</p><p><strong>[2-Q3]</strong> ${st.tab2_q3}</p><hr style="margin:15px 0; border-top:1px dashed #cbd5e1;">
+          <p><strong>[3-풀이]</strong> ${st.tab3_q2}</p>
+          ${st.tab3_img && st.tab3_img.length>10 ? `<img src="${st.tab3_img}" style="max-width:100%; max-height:300px; border:1px solid #cbd5e1; margin-top:10px;">` : '<p style="color:red">이미지 없음</p>'}
+        </div>
+      `;
+    }
 
-</body>
-</html>
+    function exportSubmissionsToCSV() {
+      let csv = "\uFEFF학번,제출시간,1번_Q1,1번_Q2,2번_Q1,2번_Q2,2번_Q3,3번_풀이,이미지링크\n";
+      allSubmissionsData.forEach(s => csv += `"${s.id}","${s.time}","${(s.tab1_q1||'').replace(/"/g,'""')}","${(s.tab1_q2||'').replace(/"/g,'""')}","${(s.tab2_q1||'').replace(/"/g,'""')}","${(s.tab2_q2||'').replace(/"/g,'""')}","${(s.tab2_q3||'').replace(/"/g,'""')}","${(s.tab3_q2||'').replace(/"/g,'""')}","${s.tab3_img||''}"\n`);
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = "학생제출데이터.csv"; a.click();
+    }
+
+    window.onload = () => { renderTable(); initCharts(); initTab1Chart(); initLeafletMap(); updateAllModels(); };
+  </script>
 </body>
 </html>
