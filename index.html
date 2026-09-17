@@ -93,8 +93,8 @@
     .status-no { background: #fee2e2; color: #991b1b; }
 
     /* PDF 렌더링용 템플릿 숨김 */
-    /* BUG FIX: 화면 밖으로 밀어내지 않고, 제자리에 두되 투명하게 숨겨서 캔버스 잘림 방지 */
-    #pdf-template-container { position: absolute; left: 0; top: 0; z-index: -9999; visibility: hidden; width: 800px; }
+    /* BUG FIX: 화면 밖으로 안전하게 숨김 처리 복구 */
+    #pdf-template-container { position: absolute; left: -9999px; top: 0; }
     
     /* PDF 출력 사이즈 설정 (A4 기준 폭 설정, 여백은 스크립트에서 자동 처리) */
     .pdf-page { width: 800px; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; }
@@ -623,7 +623,8 @@
 
       const element = document.getElementById('pdf-content');
       
-      // BUG FIX: windowWidth와 고정 width를 모두 800px로 설정하고 스크롤 오프셋을 없앰
+      // BUG FIX: x, y, width 등 강제 좌표를 제거하고 html2pdf의 자동 감지 활용. 
+      // 좁은 브라우저 환경에서 오른쪽 잘림 방지를 위해 windowWidth만 넉넉하게 1200으로 설정.
       const opt = {
         margin: [20, 20, 20, 20], 
         filename: `지구시스템과학_보고서_${sId}.pdf`,
@@ -631,12 +632,7 @@
         html2canvas: { 
           scale: 2, 
           useCORS: true, 
-          windowWidth: 800, 
-          width: 800,
-          x: 0,
-          y: 0,
-          scrollX: 0,
-          scrollY: 0
+          windowWidth: 1200 
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] } 
