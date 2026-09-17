@@ -93,11 +93,11 @@
     .status-no { background: #fee2e2; color: #991b1b; }
 
     /* PDF 렌더링용 템플릿 숨김 */
-    /* BUG FIX: 왼쪽 잘림 현상을 해결하기 위해 음수 좌표(-9999px)를 제거하고 제자리에서 투명하게 숨김 처리 */
-    #pdf-template-container { position: absolute; left: 0; top: 0; z-index: -9999; visibility: hidden; width: 1000px; }
+    /* BUG FIX: Bounding Box가 잘리는 것을 막기 위해 부모 컨테이너에 넉넉한 Padding 안전구역을 부여 */
+    #pdf-template-container { position: absolute; left: -9999px; top: -9999px; width: 1100px; padding: 50px; background: white; }
     
-    /* PDF 출력 사이즈 설정 (내용을 전체적으로 오른쪽으로 밀기 위해 padding-left 40px 적용) */
-    .pdf-page { width: 1000px; padding: 20px 20px 20px 40px; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; }
+    /* PDF 출력 사이즈 설정 (A4 가로 기준 폭 1000px 설정 및 중앙 정렬) */
+    .pdf-page { width: 1000px; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; margin: 0 auto; box-sizing: border-box; }
     
     .pdf-header { border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
     .pdf-header img { height: 45px; }
@@ -379,6 +379,7 @@
   </div>
 
   <!-- 5. PDF 렌더링을 위한 숨겨진 HTML 템플릿 -->
+  <!-- BUG FIX: 캡처 중 좌표 유실을 막기 위해 padding 보호막(50px) 설정 -->
   <div id="pdf-template-container">
     <div id="pdf-content" class="pdf-page">
       <div class="pdf-header">
@@ -628,11 +629,12 @@
         noImgEl.style.display = 'block';
       }
 
+      // #pdf-content 요소를 타겟으로 캡처 진행
       const element = document.getElementById('pdf-content');
       
-      // PDF 다운로드 옵션 업데이트 (좌우 여백 15mm 적용)
+      // BUG FIX: 상하좌우 모두 15mm (1.5cm) 여백 설정
       const opt = {
-        margin: [20, 15, 20, 15], // 상 20mm, 우 15mm, 하 20mm, 좌 15mm 설정
+        margin: [15, 15, 15, 15], 
         filename: `지구시스템과학_보고서_${sId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
