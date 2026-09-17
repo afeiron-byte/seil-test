@@ -93,17 +93,19 @@
     .status-no { background: #fee2e2; color: #991b1b; }
 
     /* PDF 렌더링용 템플릿 숨김 */
-    /* 좌측 잘림 현상을 해결하기 위해 position: fixed 를 사용하고 뷰포트 밖으로 완전히 빼냄 */
     #pdf-template-container { 
-      position: fixed;  
-      top: 0; 
-      visibility: hidden; 
-      width: 1000px; 
+      position: absolute; 
+      top: 0;
+      left: 0; 
+      z-index: -9999; 
+      opacity: 0.01; /* visibility: hidden 대신 opacity를 사용하여 렌더링 엔진이 무시하지 않도록 변경 */
+      pointer-events: none; 
+      width: 1100px; /* 너비를 충분히 확보 */
+      background: #ffffff; /* 배경색 명시 */
       box-sizing: border-box; 
-      /* padding 삭제: html2pdf 마진 옵션에 의존 */
     }
     
-    /* PDF 출력 사이즈 설정 */
+    /* PDF 출력 사이즈 설정 (A4 가로 기준 폭 100% 설정) */
     .pdf-page { width: 100%; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; }
     
     .pdf-header { border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
@@ -632,59 +634,51 @@
       const noImgEl = document.getElementById('pdf-t3-noimg');
       if (ans.t3_img && ans.t3_img.startsWith('data:image')) {
         imgEl.src = ans.t3_img;
-        // 이미지가 로드될 때까지 기다렸다가 PDF 생성
-        imgEl.onload = () => {
-          imgEl.style.display = 'inline-block';
-          noImgEl.style.display = 'none';
-          triggerPdfGeneration(sId);
-        };
-        // 캐시된 이미지의 경우 onload가 즉시 안 불릴 수 있으므로 폴백 처리
-        if (imgEl.complete) {
-           imgEl.style.display = 'inline-block';
-           noImgEl.style.display = 'none';
-           triggerPdfGeneration(sId);
-        }
+        imgEl.style.display = 'inline-block';
+        noImgEl.style.display = 'none';
       } else {
         imgEl.style.display = 'none';
         noImgEl.style.display = 'block';
-        triggerPdfGeneration(sId);
       }
-    }
 
-    function triggerPdfGeneration(sId) {
       const element = document.getElementById('pdf-content');
       
-      // html2pdf 옵션 수정: 잘림 방지
       const opt = {
-        margin: [10, 10, 10, 10], // 마진 축소 (모든 여백 동일하게 설정)
+        margin: [15, 15, 15, 15], 
         filename: `지구시스템과학_보고서_${sId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
           scale: 2, 
           useCORS: true, 
-          // 스크롤 위치 초기화
           scrollX: 0, 
-          scrollY: 0,
-          // 윈도우 크기를 강제로 지정하여 요소가 충분히 렌더링되게 함
-          windowWidth: document.getElementById('pdf-content').scrollWidth
+          scrollY: 0, 
+          x: 0, // 강제로 캡처 시작 X좌표를 0으로 고정
+          y: 0, // 강제로 캡처 시작 Y좌표를 0으로 고정
+          windowWidth: 1200 
         },
         jsPDF: { 
           unit: 'mm', 
           format: 'a4', 
-          orientation: 'landscape' // 가로 방향으로 넓게 설정
+          orientation: 'landscape' 
         },
         pagebreak: { mode: ['css', 'legacy'] } 
       };
       
-      // 렌더링 전 잠시 컨테이너를 보이게 하지만 화면엔 안보이게(위치상)
-      const container = document.getElementById('pdf-template-container');
-      container.style.visibility = 'visible';
-
       alert(`${sId} 학생의 PDF 생성을 시작합니다. 잠시만 기다려주세요.`);
-      
+
+      // [핵심 해결책] 스크롤 위치에 따른 캡처 잘림 방지를 위해 스크롤 임시 초기화
+      const originalScrollY = window.scrollY;
+      const originalScrollX = window.scrollX;
+      window.scrollTo(0, 0);
+
+      // 컨테이너 잠시 활성화
+      const container = document.getElementById('pdf-template-container');
+      container.style.opacity = '1';
+
       html2pdf().set(opt).from(element).save().then(() => {
-          // 완료 후 다시 숨김
-          container.style.visibility = 'hidden';
+        // 완료 후 상태 복구
+        container.style.opacity = '0.01';
+        window.scrollTo(originalScrollX, originalScrollY);
       });
     }
 
