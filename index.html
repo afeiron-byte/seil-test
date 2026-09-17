@@ -93,11 +93,11 @@
     .status-no { background: #fee2e2; color: #991b1b; }
 
     /* PDF 렌더링용 템플릿 숨김 */
-    /* BUG FIX: 화면 밖으로 안전하게 숨김 처리 복구 */
-    #pdf-template-container { position: absolute; left: -9999px; top: 0; }
+    /* 가로 모드에 맞춰 너비를 1000px로 증가 */
+    #pdf-template-container { position: absolute; left: -9999px; top: 0; width: 1000px; }
     
-    /* PDF 출력 사이즈 설정 (A4 기준 폭 설정, 여백은 스크립트에서 자동 처리) */
-    .pdf-page { width: 800px; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; }
+    /* PDF 출력 사이즈 설정 (A4 가로 기준 폭 설정) */
+    .pdf-page { width: 1000px; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; }
     
     .pdf-header { border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
     .pdf-header img { height: 45px; }
@@ -106,6 +106,10 @@
     
     /* 문제 구역이나 박스가 페이지 중간에 잘리지 않게 설정 */
     .pdf-section { margin-bottom: 25px; page-break-inside: avoid; }
+    
+    /* 탭마다 강제로 다음 페이지로 넘기기 위한 클래스 */
+    .page-break { page-break-before: always; }
+    
     .pdf-section h2 { font-size: 1.2rem; color: #1e3a8a; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px; }
     .pdf-q-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 12px; page-break-inside: avoid; }
     .pdf-q-title { font-weight: bold; margin-bottom: 8px; font-size: 0.95rem; }
@@ -386,6 +390,7 @@
         <div><strong>이름:</strong> <span id="pdf-student-name"></span></div>
       </div>
 
+      <!-- 첫 번째 탭 섹션 -->
       <div class="pdf-section">
         <h2>1. P파 주행시간 기초자료 및 지각 두께</h2>
         <div class="pdf-q-box">
@@ -398,7 +403,8 @@
         </div>
       </div>
 
-      <div class="pdf-section">
+      <!-- 두 번째 탭 섹션 (새 페이지에서 시작) -->
+      <div class="pdf-section page-break">
         <h2>2. 주시곡선 심층 해석 과제</h2>
         <div class="pdf-q-box">
           <div class="pdf-q-title">Q1. 직접파 추세선의 기울기보다 굴절파 추세선의 기울기가 완만한 이유를 서술하시오.</div>
@@ -414,7 +420,8 @@
         </div>
       </div>
 
-      <div class="pdf-section">
+      <!-- 세 번째 탭 섹션 (새 페이지에서 시작) -->
+      <div class="pdf-section page-break">
         <h2>3. 지도 기반 진앙 및 진원 깊이 결정</h2>
         <div class="pdf-q-box">
           <div class="pdf-q-title">과제 1. 진앙 지점을 표시한 첨부 이미지</div>
@@ -623,8 +630,7 @@
 
       const element = document.getElementById('pdf-content');
       
-      // BUG FIX: x, y, width 등 강제 좌표를 제거하고 html2pdf의 자동 감지 활용. 
-      // 좁은 브라우저 환경에서 오른쪽 잘림 방지를 위해 windowWidth만 넉넉하게 1200으로 설정.
+      // PDF 다운로드 옵션 업데이트 (가로 모드 적용 및 자동 감지 최적화)
       const opt = {
         margin: [20, 20, 20, 20], 
         filename: `지구시스템과학_보고서_${sId}.pdf`,
@@ -634,7 +640,11 @@
           useCORS: true, 
           windowWidth: 1200 
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'landscape' // 가로 방향 출력 적용
+        },
         pagebreak: { mode: ['css', 'legacy'] } 
       };
       
