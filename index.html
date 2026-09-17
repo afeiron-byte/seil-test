@@ -93,11 +93,11 @@
     .status-no { background: #fee2e2; color: #991b1b; }
 
     /* PDF 렌더링용 템플릿 숨김 */
-    /* 가로 모드에 맞춰 너비를 1000px로 증가 */
-    #pdf-template-container { position: absolute; left: -9999px; top: 0; width: 1000px; }
+    /* BUG FIX: 왼쪽 잘림 현상을 해결하기 위해 음수 좌표(-9999px)를 제거하고 제자리에서 투명하게 숨김 처리 */
+    #pdf-template-container { position: absolute; left: 0; top: 0; z-index: -9999; visibility: hidden; width: 1000px; }
     
-    /* PDF 출력 사이즈 설정 (A4 가로 기준 폭 설정) */
-    .pdf-page { width: 1000px; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; }
+    /* PDF 출력 사이즈 설정 (내용을 전체적으로 오른쪽으로 밀기 위해 padding-left 40px 적용) */
+    .pdf-page { width: 1000px; padding: 20px 20px 20px 40px; background: white; font-family: sans-serif; color: #1e293b; line-height: 1.6; }
     
     .pdf-header { border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
     .pdf-header img { height: 45px; }
@@ -630,9 +630,9 @@
 
       const element = document.getElementById('pdf-content');
       
-      // PDF 다운로드 옵션 업데이트 (가로 모드 적용 및 자동 감지 최적화)
+      // PDF 다운로드 옵션 업데이트 (좌우 여백 15mm 적용)
       const opt = {
-        margin: [20, 20, 20, 20], 
+        margin: [20, 15, 20, 15], // 상 20mm, 우 15mm, 하 20mm, 좌 15mm 설정
         filename: `지구시스템과학_보고서_${sId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
@@ -643,7 +643,7 @@
         jsPDF: { 
           unit: 'mm', 
           format: 'a4', 
-          orientation: 'landscape' // 가로 방향 출력 적용
+          orientation: 'landscape' 
         },
         pagebreak: { mode: ['css', 'legacy'] } 
       };
