@@ -4,14 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>지구시스템과학 지진파 탐구 실험실</title>
-
+  
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <!-- html2canvas for map image download -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- html2pdf for generating PDF reports -->
@@ -19,1266 +17,570 @@
 
   <style>
     :root {
-      --primary: #1e3a8a;
-      --primary-light: #3b82f6;
-      --accent: #dc2626;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #1f2937;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --direct-color: #2563eb;
-      --refract-color: #dc2626;
-      --moho-color: #8b5cf6;
-      --success: #16a34a;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    /* 단일 로그인 모달 */
-    #loginModal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.82);
-      backdrop-filter: blur(5px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .login-card {
-      background: #ffffff;
-      width: 90%;
-      max-width: 440px;
-      padding: 32px 28px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--border);
-    }
-
-    .login-card h2 {
-      font-size: 1.45rem;
-      color: var(--primary);
-      margin-bottom: 6px;
-      text-align: center;
-    }
-
-    .login-card p.sub {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 22px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin-bottom: 6px;
-      color: #334155;
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 11px 13px;
-      border-radius: 8px;
-      border: 1.5px solid #cbd5e1;
-      font-size: 0.95rem;
-      outline: none;
-      transition: border 0.2s;
-    }
-
-    .form-control:focus {
-      border-color: var(--primary-light);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-    }
-
-    .login-btn {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .login-btn:hover {
-      background: #1d4ed8;
-    }
-
-    /* 헤더 & 탭 */
-    header {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-      color: white;
-      padding: 18px 30px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .student-badge {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: #93c5fd;
-    }
-
-    .tab-nav {
-      display: flex;
-      background: #ffffff;
-      border-bottom: 2px solid var(--border);
-      padding: 0 30px;
-      gap: 10px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .tab-btn {
-      padding: 14px 22px;
-      border: none;
-      background: none;
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-bottom: 3px solid transparent;
-      transition: all 0.2s ease;
-    }
-
-    .tab-btn:hover {
-      color: var(--primary-light);
-    }
-
-    .tab-btn.active {
-      color: var(--primary);
-      border-bottom: 3px solid var(--primary);
-    }
-
-    /* 레이아웃 */
-    .content-container {
-      max-width: 1400px;
-      width: 100%;
-      margin: 22px auto;
-      padding: 0 20px;
-      flex: 1;
-    }
-
-    .tab-pane {
-      display: none;
-    }
-
-    .tab-pane.active {
-      display: block;
-      animation: fadeIn 0.25s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      border: 1px solid var(--border);
-      margin-bottom: 24px;
-    }
-
-    .card-header-flex {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .card h2 {
-      font-size: 1.25rem;
-      color: var(--primary);
-    }
-
-    .card p.desc {
-      color: var(--text-muted);
-      font-size: 0.92rem;
-      margin-bottom: 18px;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-
-    @media (max-width: 1024px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* 테이블 */
-    .table-wrapper {
-      max-height: 520px;
-      overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.94rem;
-      text-align: center;
-    }
-
-    th {
-      background: #f1f5f9;
-      color: #334155;
-      font-weight: 600;
-      padding: 11px 8px;
-      position: sticky;
-      top: 0;
-      border-bottom: 2px solid var(--border);
-      z-index: 10;
-    }
-
-    td {
-      padding: 9px 8px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    tr:nth-child(even) td {
-      background: #fbfcfe;
-    }
-
-    tr:hover td {
-      background: #f0f7ff;
-    }
-
-    /* 슬라이더 컨트롤 */
-    .control-panel {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 18px;
-    }
-
-    .control-row {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 12px;
-    }
-
-    .control-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .control-row label {
-      width: 155px;
-      font-weight: 600;
-      font-size: 0.92rem;
-      color: #334155;
-    }
-
-    .control-row input[type="range"] {
-      flex: 1;
-      accent-color: var(--primary-light);
-      cursor: pointer;
-    }
-
-    .value-badge {
-      width: 85px;
-      text-align: right;
-      font-weight: 700;
-      font-size: 1.02rem;
-      color: var(--primary);
-    }
-
-    .calc-result-callout {
-      font-size: 1.3rem;
-      font-weight: 800;
-      color: #1e3a8a;
-      text-align: center;
-      padding: 12px;
-      background: #dbeafe;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    /* 질문 & 답변 (자동 확장) */
-    .qa-card {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px;
-      margin-top: 20px;
-    }
-
-    .qa-item {
-      margin-bottom: 22px;
-    }
-
-    .qa-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .qa-label {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #1e293b;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .qa-label .q-num {
-      background: var(--primary);
-      color: white;
-      font-size: 0.78rem;
-      padding: 2px 7px;
-      border-radius: 4px;
-      margin-top: 2px;
-      flex-shrink: 0;
-    }
-
-    .auto-textarea {
-      width: 100%;
-      min-height: 80px;
-      padding: 12px 14px;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      resize: none;
-      overflow-y: hidden;
-      background: #ffffff;
-      outline: none;
-      transition: border 0.2s;
-    }
-
-    .auto-textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
-    }
-
-    /* 입력 팁(가이드) 텍스트 스타일 */
-    .input-tip {
-      font-size: 0.8rem;
-      color: #94a3b8;
-      margin-top: 4px;
-      margin-left: 4px;
-    }
-
-    .btn-submit {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 11px 24px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: background 0.2s;
-    }
-
-    .btn-submit:hover {
-      background: #1d4ed8;
-    }
-
-    /* 시뮬레이션 */
-    .sim-container {
-      background: #0f172a;
-      border-radius: 10px;
-      padding: 15px;
-      position: relative;
-    }
-
-    #waveCanvas {
-      width: 100%;
-      height: 240px;
-      background: #1e293b;
-      border-radius: 6px;
-      display: block;
-    }
-
-    .sim-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 12px;
-      color: #cbd5e1;
-      font-size: 0.88rem;
-    }
-
-    .btn {
-      padding: 8px 18px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .btn-primary {
-      background: var(--primary-light);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #2563eb;
-    }
-
-    .btn-outline {
-      background: #334155;
-      color: #f8fafc;
-    }
-
-    .btn-outline:hover {
-      background: #475569;
-    }
-
-    /* 지도 및 이미지 */
-    #map {
-      width: 100%;
-      height: 520px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-
-    .image-preview-container {
-      margin-top: 10px;
-      border: 2px dashed #cbd5e1;
-      border-radius: 8px;
-      padding: 15px;
-      text-align: center;
-      background: #ffffff;
-    }
-
-    .image-preview {
-      max-width: 100%;
-      max-height: 260px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      display: none;
-      margin: 10px auto 0;
-    }
-
-    .station-selector-box {
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 14px;
-      display: flex;
-      gap: 15px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .station-selector-box select {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1.5px solid #94a3b8;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
+      --primary: #1e3a8a; --primary-light: #3b82f6; --accent: #dc2626;
+      --bg: #f8fafc; --card-bg: #ffffff; --text: #1f2937; --text-muted: #64748b;
+      --border: #e2e8f0; --direct-color: #2563eb; --refract-color: #dc2626;
+      --moho-color: #8b5cf6; --success: #16a34a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+    body { background-color: var(--bg); color: var(--text); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+    
+    /* 로그인 모달 */
+    #loginModal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .login-card { background: #ffffff; width: 90%; max-width: 440px; padding: 32px 28px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: 1px solid var(--border); }
+    .login-card h2 { font-size: 1.45rem; color: var(--primary); text-align: center; margin-bottom: 6px; }
+    .login-card p.sub { font-size: 0.88rem; color: var(--text-muted); text-align: center; margin-bottom: 22px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; color: #334155;}
+    .form-control { width: 100%; padding: 11px 13px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 0.95rem; outline: none; }
+    .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+    .login-btn { width: 100%; padding: 12px; margin-top: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    
+    /* 화이트 테마 헤더 */
+    header { background: #ffffff; color: var(--primary); padding: 12px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+    .header-title-container { display: flex; align-items: center; gap: 14px; }
+    .header-logo { height: 48px; width: auto; object-fit: contain; }
+    header h1 { font-size: 1.4rem; font-weight: 800; margin: 0; color: #1e3a8a; letter-spacing: -0.5px;}
+    
+    .student-badge { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 14px; border-radius: 20px; font-size: 0.88rem; font-weight: 600; color: #334155;}
+    
+    .tab-nav { display: flex; background: #ffffff; border-bottom: 2px solid var(--border); padding: 0 30px; gap: 10px; position: sticky; top: 0; z-index: 100; }
+    .tab-btn { padding: 14px 22px; border: none; background: none; font-size: 1rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;}
+    .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+    
+    .content-container { max-width: 1400px; width: 100%; margin: 22px auto; padding: 0 20px; flex: 1; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeIn 0.25s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--border); margin-bottom: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+    
+    .table-wrapper { max-height: 520px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.94rem; text-align: center; }
+    th { background: #f1f5f9; padding: 11px 8px; position: sticky; top: 0; border-bottom: 2px solid var(--border); }
+    td { padding: 9px 8px; border-bottom: 1px solid var(--border); }
+    tr:nth-child(even) td { background: #fbfcfe; }
+    
+    .control-panel { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 18px; }
+    .control-row { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .control-row input[type="range"] { flex: 1; }
+    .value-badge { width: 85px; text-align: right; font-weight: 700; font-size: 1.02rem; color: var(--primary); }
+    
+    .calc-result-callout { font-size: 1.3rem; font-weight: 800; color: #1e3a8a; text-align: center; padding: 12px; background: #dbeafe; border-radius: 8px; margin-top: 10px; }
+    
+    .qa-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 20px; }
+    .qa-item { margin-bottom: 22px; }
+    .qa-label { font-weight: 700; font-size: 0.95rem; color: #1e293b; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px; }
+    .qa-label .q-num { background: var(--primary); color: white; font-size: 0.78rem; padding: 2px 7px; border-radius: 4px; margin-top: 2px; flex-shrink: 0; }
+    
+    .auto-textarea { width: 100%; min-height: 80px; padding: 12px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; resize: none; overflow-y: hidden; background: #ffffff; outline: none; }
+    .input-tip { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; margin-left: 4px; }
+    .btn-submit { background: var(--primary); color: white; border: none; padding: 11px 24px; border-radius: 6px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+    .btn-primary { background: var(--primary-light); color: white; padding: 8px 18px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .btn-outline { background: #334155; color: #f8fafc; padding: 8px 18px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    
+    .sim-container { background: #0f172a; border-radius: 10px; padding: 15px; position: relative; margin-top:10px; }
+    #waveCanvas { width: 100%; height: 240px; background: #1e293b; border-radius: 6px; display: block; }
+    .sim-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; color: #cbd5e1; font-size: 0.88rem; }
+    
+    #map { width: 100%; height: 520px; border-radius: 10px; border: 1px solid var(--border); margin-top:10px;}
+    .image-preview-container { margin-top: 10px; border: 2px dashed #cbd5e1; border-radius: 8px; padding: 15px; text-align: center; background: #ffffff; }
+    .image-preview { max-width: 100%; max-height: 260px; border-radius: 6px; border: 1px solid var(--border); display: none; margin: 10px auto 0; }
+
+    /* 교사 대시보드 테이블 */
+    .teacher-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .teacher-table th { background: #1e3a8a; color: white; padding: 12px; }
+    .teacher-table td { border: 1px solid #cbd5e1; padding: 12px; text-align: center; }
+    .status-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; }
+    .status-yes { background: #dcfce7; color: #166534; }
+    .status-no { background: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body>
 
-  <!-- 0. 단일 로그인 폼 모달 -->
+  <!-- 1. 로그인 폼 -->
   <div id="loginModal">
     <div class="login-card">
       <h2 id="loginTitle">지구시스템과학 탐구</h2>
-      <p class="sub" id="loginSub">지진파 자료를 활용하여 지각의 두께 구하기</p>
-
+      <p class="sub">학번과 비밀번호를 입력하세요<br><span style="font-size:0.8rem;color:#ef4444;">(학생 비밀번호는 최초 로그인 시 자동 등록됩니다)</span></p>
+      
       <div class="form-group">
-        <label for="inputStudentId">ID</label>
-        <input type="text" id="inputStudentId" class="form-control" placeholder="ID를 입력하세요 (교사는 teacher 입력)">
+        <label>ID (학번 / 교사ID)</label>
+        <input type="text" id="inputStudentId" class="form-control" placeholder="예: 20401 또는 교사ID">
       </div>
-
       <div class="form-group">
-        <label for="inputPassword">비밀번호</label>
+        <label>비밀번호</label>
         <input type="password" id="inputPassword" class="form-control" placeholder="비밀번호를 입력하세요">
       </div>
 
-      <button class="login-btn" id="btnLoginSubmit" onclick="handleLogin()">탐구 시작</button>
-
-      <div style="margin-top: 16px; font-size: 0.75rem; color: #94a3b8; text-align: center;">
-        계정 정보는 구글 스프레드시트의 등록된 정보로 확인합니다.
-      </div>
+      <button class="login-btn" id="btnLoginSubmit" onclick="handleLogin()">접속하기</button>
     </div>
   </div>
 
-  <!-- 교사용 전체형 학생 제출 관리 대시보드 모달 -->
-  <div id="teacherDashboardModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(6px); z-index: 99999; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; width: 100%; max-width: 1300px; height: 92vh; border-radius: 16px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden;">
-
-      <div style="background: #1e3a8a; color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
-            👨‍🏫 지진파 탐구활동 전체 제출 현황 관리 시스템
-          </h2>
-          <p style="font-size: 0.85rem; color: #bfdbfe; margin-top: 4px;">
-            학생별 1번·2번·3번 탭의 모든 질문 문항, 주관식 서술 답변, 진앙 작도 이미지 원본을 상세히 조회합니다.
-          </p>
-        </div>
-        <button class="btn" onclick="closeTeacherDashboard()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-          닫기 ✕
-        </button>
-      </div>
-
-      <div style="background: #f8fafc; padding: 14px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <input type="text" id="teacherSearchInput" oninput="filterSubmissions()" placeholder="학번 검색 (예: 20401)" 
-                 style="padding: 7px 12px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; outline: none; width: 180px;">
-          <span id="submissionCountBadge" style="font-size: 0.88rem; font-weight: bold; color: #1e3a8a; background: #e0e7ff; padding: 6px 12px; border-radius: 20px;">
-            총 제출 인원: 0명
-          </span>
-        </div>
-
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary" onclick="refreshStudentSubmissions()" style="font-size: 0.88rem; padding: 7px 14px;">
-            🔄 실시간 새로고침
-          </button>
-          <button class="btn btn-primary" onclick="exportSubmissionsToCSV()" style="background: #059669; font-size: 0.88rem; padding: 7px 14px;">
-            📥 전체 답변 CSV 다운로드
-          </button>
-          <button class="btn btn-outline" onclick="openGoogleSheetLink()" style="font-size: 0.88rem; padding: 7px 14px;">
-            📊 연동 스프레드시트 열기
-          </button>
-        </div>
-      </div>
-
-      <div style="flex: 1; display: grid; grid-template-columns: 320px 1fr; overflow: hidden; background: #f1f5f9;">
-        <div style="background: #ffffff; border-right: 1px solid #e2e8f0; overflow-y: auto; padding: 12px;" id="teacherStudentListContainer">
-        </div>
-        <div style="overflow-y: auto; padding: 24px;" id="teacherStudentDetailContainer">
-          <div style="text-align: center; color: #64748b; margin-top: 100px;">
-            <p style="font-size: 1.1rem; font-weight: bold;">좌측 목록에서 검토할 학생을 선택해 주세요.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <!-- 2. 헤더 영역 -->
   <header>
-    <h1>지구시스템과학 인터랙티브 탐구실</h1>
+    <div class="header-title-container">
+      <!-- 필요 시 로고 이미지 경로를 수정하세요 -->
+      <img src="세일고CI-01.png" alt="학교 로고" class="header-logo" onerror="this.style.display='none'">
+      <h1>지구시스템과학 인터랙티브 탐구실</h1>
+    </div>
+    
     <div style="display: flex; align-items: center; gap: 12px;">
-      <button class="btn btn-outline" id="btnTeacherDash" onclick="openTeacherDashboard()" style="display:none; background:#4338ca; border:1px solid #6366f1; font-size:0.88rem; color:white;">
-        👨‍🏫 학생 제출 현황 대시보드
-      </button>
-      <button class="btn btn-primary" onclick="exportReportToPDF()" style="background:#059669; font-size:0.88rem; display:flex; align-items:center; gap:6px;">
-        📄 탐구 보고서 PDF 저장
-      </button>
-      <button class="btn btn-outline" onclick="logout()" style="background:#ef4444; color:white; border:none; font-size:0.88rem; display:flex; align-items:center; gap:6px;">
-        로그아웃
-      </button>
+      <button class="btn-primary" id="btnStudentPdf" style="background:#059669; padding:8px 16px; display:none;" onclick="exportMyReportToPDF()">📄 내 보고서 PDF 저장</button>
+      <button class="btn-outline" onclick="location.reload()" style="background:#ef4444; color:white;">로그아웃</button>
       <div class="student-badge" id="studentDisplay">로그인 대기 중</div>
     </div>
   </header>
 
-  <nav class="tab-nav">
-    <button class="tab-btn active" onclick="switchTab(0)">
-      <span>1. P파 주행시간 기초자료</span>
-    </button>
-    <button class="tab-btn" onclick="switchTab(1)">
-      <span>2. 주시곡선·지각두께·전파시뮬레이션</span>
-    </button>
-    <button class="tab-btn" onclick="switchTab(2)">
-      <span>3. 지도 기반 진앙 결정 탐구</span>
-    </button>
-  </nav>
-
-  <main class="content-container">
-
-    <!-- ==========================================
-         TAB 1: 관측소 데이터 & 주시곡선 그래프 & 탐구 문제
-         ========================================== -->
-    <section id="tab-0" class="tab-pane active">
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <h2>P파 주행 시간 관측 데이터</h2>
-          <span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">(참고: 비상교육 지구시스템과학 P.42)</span>
-        </div>
-        <p class="desc">
-          각 관측소의 진앙 거리와 P파 도착 시각으로부터 산출된 <strong>P파 주행 시간(초)</strong>이 기본값으로 제공됩니다.
-        </p>
-
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>관측소</th>
-                <th>진앙 거리 (km)</th>
-                <th>P파 도착 시각</th>
-                <th>P파 주행 시간 (초)</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody">
-            </tbody>
-          </table>
-        </div>
-
-        <div style="margin-top: 30px; border-top: 2px solid var(--border); padding-top: 24px;">
-          <h3 style="font-size: 1.18rem; color: var(--primary); margin-bottom: 8px;">
-            📈 관측 데이터를 이용한 진앙 거리 - P파 주행 시간 그래프
-          </h3>
-          <p class="desc">표의 진앙 거리와 P파 주행 시간 데이터를 분산형 차트로 시각화한 주시곡선입니다. </p>
-          <div style="position: relative; height: 700px;"> <!-- Y축 확장 유지 -->
-            <canvas id="tab1Chart"></canvas>
-          </div>
-        </div>
-
-        <div class="qa-card" style="margin-top: 24px;">
-          <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 12px;">
-            탐구 분석 과제
-          </h3>
-
-          <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;">
-            <div style="font-weight: bold; color: #1e3a8a; font-size: 0.95rem; margin-bottom: 4px;">
-              📐 지각의 두께(d) 유도식
-            </div>
-            <div style="font-family: 'Times New Roman', serif; font-size: 1.25rem; font-style: italic; color: #1d4ed8; text-align: center; margin: 6px 0;">
-              d = (D / 2) &times; &radic;[ (v₂ - v₁) / (v₂ + v₁) ]
-            </div>
-            <div style="font-size: 0.85rem; color: #475569; text-align: center;">
-              (단, D = 교차 거리, 지각 내 P파 속도 v₁ &approx; 5.6 km/s, 상부 맨틀 내 P파 속도 v₂ &approx; 8.0 km/s)
-            </div>
-          </div>
-
-          <div class="qa-item">
-            <div class="qa-label">
-              <span class="q-num">1</span>
-              <span>위 그래프를 이용하여 교차 거리를 구하시오.</span>
-            </div>
-            <textarea id="tab1_q1" class="auto-textarea" placeholder="그래프에서 직접파와 굴절파가 만나는 교차 거리(D)를 판독하여 서술하시오..." oninput="autoResize(this)"></textarea>
-            <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
-          </div>
-
-          <div class="qa-item">
-            <div class="qa-label">
-              <span class="q-num">2</span>
-              <span>1번에서 구한 교차 거리를 이용하여 지각의 두께를 계산하시오.</span>
-            </div>
-            <textarea id="tab1_q2" class="auto-textarea" style="min-height: 95px;" placeholder="유도식에 교차 거리(D) 및 지각·맨틀 속도를 대입하여 지각의 두께(d)를 계산하는 과정과 최종값을 서술하시오..." oninput="autoResize(this)"></textarea>
-            <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
-          </div>
-
-          <div style="margin-top: 14px;">
-            <button class="btn-submit" onclick="submitTab1Answers()">답변 제출</button>
-            <span id="tab1_status" style="margin-left:12px; font-size:0.88rem; font-weight:600;"></span>
-          </div>
-        </div>
-
+  <!-- 3. 교사 전용 대시보드 화면 -->
+  <div id="teacher-view" class="content-container" style="display:none;">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin:0;">👨‍🏫 학생 전체 제출 현황 관리</h2>
+        <button class="btn-primary" onclick="loadTeacherDashboard()">🔄 새로고침</button>
       </div>
-    </section>
+      <p style="color:#64748b; margin-bottom:20px;">학생들의 탐구활동 제출 여부를 확인하고, 제출된 학생의 개별 보고서를 PDF로 출력할 수 있습니다.</p>
+      
+      <table class="teacher-table">
+        <thead>
+          <tr>
+            <th>학번</th>
+            <th>이름</th>
+            <th>제출 상태</th>
+            <th>제출 일시</th>
+            <th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="teacher-table-body">
+          <tr><td colspan="5">학생 데이터를 불러오는 중입니다...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-    <!-- ==========================================
-         TAB 2: 수정된 3개 탐구 질문 & 1:1 완벽 물리 비율 시뮬레이션
-         ========================================== -->
-    <section id="tab-1" class="tab-pane">
-      <div class="grid-2">
+  <!-- 4. 학생 전용 탐구 화면 -->
+  <div id="student-view" style="display:none; flex:1; flex-direction: column;">
+    <nav class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab(0)">1. P파 주행시간 기초자료</button>
+      <button class="tab-btn" onclick="switchTab(1)">2. 주시곡선·지각두께·전파시뮬레이션</button>
+      <button class="tab-btn" onclick="switchTab(2)">3. 지도 기반 진앙 결정 탐구</button>
+    </nav>
 
-        <div>
-          <div class="card">
-            <h2>인터랙티브 파라미터 제어 & 주시곡선</h2>
-            <p class="desc">지각 속도, 맨틀 속도, 교차 거리를 변경하면 그래프, 공식, 시뮬레이션이 실시간 동기화됩니다.</p>
+    <main class="content-container">
+      
+      <!-- TAB 1 -->
+      <section id="tab-0" class="tab-pane active">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between;">
+            <h2>P파 주행 시간 관측 데이터</h2>
+            <span style="font-size: 0.9rem; color: #64748b; font-weight: 600;">(참고: 비상교육 지구시스템과학 P.42)</span>
+          </div>
+          <div class="table-wrapper" style="margin-top:14px;">
+            <table>
+              <thead><tr><th>관측소</th><th>진앙 거리 (km)</th><th>P파 도착 시각</th><th>P파 주행 시간 (초)</th></tr></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
 
-            <div class="control-panel">
-              <div class="control-row">
-                <label>지각 내 속도 (<span style="color:var(--direct-color); font-weight:bold;">v₁</span>):</label>
-                <input type="range" id="paramV1" min="4.5" max="6.8" step="0.1" value="5.6" oninput="updateAllModels()">
-                <div class="value-badge" id="v1Val">5.6 km/s</div>
-              </div>
-              <div class="control-row">
-                <label>맨틀 내 속도 (<span style="color:var(--refract-color); font-weight:bold;">v₂</span>):</label>
-                <input type="range" id="paramV2" min="7.0" max="9.0" step="0.1" value="8.0" oninput="updateAllModels()">
-                <div class="value-badge" id="v2Val">8.0 km/s</div>
-              </div>
-              <div class="control-row">
-                <label>교차 거리 (<span style="color:var(--moho-color); font-weight:bold;">D</span>):</label>
-                <input type="range" id="paramD" min="120" max="300" step="1" value="208" oninput="updateAllModels()">
-                <div class="value-badge" id="dVal">208 km</div>
-              </div>
+          <div style="margin-top: 30px; border-top: 2px solid var(--border); padding-top: 24px;">
+            <h3 style="font-size: 1.18rem; color: var(--primary); margin-bottom: 8px;">📈 진앙 거리 - P파 주행 시간 그래프 (교차거리 250km 기준)</h3>
+            <div style="position: relative; height: 700px;">
+              <canvas id="tab1Chart"></canvas>
             </div>
+          </div>
 
-            <div style="position: relative; height: 320px;">
-              <canvas id="travelTimeChart"></canvas>
+          <div class="qa-card">
+            <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 12px;">탐구 분석 과제</h3>
+            <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;">
+              <div style="font-weight: bold; color: #1e3a8a; font-size: 0.95rem; margin-bottom: 4px;">📐 지각의 두께(d) 유도식</div>
+              <div style="font-family: 'Times New Roman', serif; font-size: 1.25rem; font-style: italic; color: #1d4ed8; text-align: center; margin: 6px 0;">d = (D / 2) &times; &radic;[ (v₂ - v₁) / (v₂ + v₁) ]</div>
             </div>
-
-            <div class="qa-card">
-              <h3 style="font-size:1.15rem; color:var(--primary); margin-bottom:16px;">주시곡선 심층 해석 탐구 과제</h3>
-
-              <div class="qa-item">
-                <div class="qa-label">
-                  <span class="q-num">Q1</span>
-                  <span>직접파 추세선의 기울기보다 굴절파 추세선의 기울기가 완만한 이유를 서술하시오.</span>
-                </div>
-                <textarea id="tab2_q1" class="auto-textarea" placeholder="답변을 입력하세요 (입력 내용에 따라 칸이 아래로 확장됩니다)..." oninput="autoResize(this)"></textarea>
-                <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
-              </div>
-
-              <div class="qa-item">
-                <div class="qa-label">
-                  <span class="q-num">Q2</span>
-                  <span>굴절파 추세선을 y축(진앙 거리=0)까지 연장했을 때 만나는 시간 절편(t₀)은 물리적으로 무엇을 의미하는지 서술하시오.</span>
-                </div>
-                <textarea id="tab2_q2" class="auto-textarea" placeholder="답변을 입력하세요 (입력 내용에 따라 칸이 아래로 확장됩니다)..." oninput="autoResize(this)"></textarea>
-                <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
-              </div>
-
-              <div class="qa-item">
-                <div class="qa-label">
-                  <span class="q-num">Q3</span>
-                  <span>지각 속도(v₁), 맨틀 속도(v₂), 지각의 두께(d)를 각각 변화시킬 때, '교차 거리(D)'는 각각 어떻게 변하는지 관찰하고 그 이유(물리적 관계)를 서술하시오.</span>
-                </div>
-                <textarea id="tab2_q3" class="auto-textarea" style="min-height:95px;" placeholder="답변을 입력하세요 (v₁, v₂, d 변화 시 D의 변화와 물리적 이유 서술)..." oninput="autoResize(this)"></textarea>
-                <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
-              </div>
-
-              <button class="btn-submit" onclick="submitTab2Answers()">답변 제출</button>
-              <span id="tab2_status" style="margin-left:12px; font-size:0.88rem; font-weight:600;"></span>
+            <div class="qa-item">
+              <div class="qa-label"><span class="q-num">1</span><span>위 그래프를 이용하여 교차 거리를 구하시오.</span></div>
+              <textarea id="tab1_q1" class="auto-textarea" placeholder="그래프에서 직접파와 굴절파가 만나는 교차 거리(D)를 판독하여 서술하시오..." oninput="autoResize(this)"></textarea>
+              <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
             </div>
-
+            <div class="qa-item">
+              <div class="qa-label"><span class="q-num">2</span><span>교차 거리를 이용하여 지각의 두께를 계산하시오.</span></div>
+              <textarea id="tab1_q2" class="auto-textarea" placeholder="계산 과정과 최종값을 서술하시오..." oninput="autoResize(this)"></textarea>
+              <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
+            </div>
+            <button class="btn-submit" onclick="submitAllAnswers()">전체 답변 1차 저장 (수시로 누르세요)</button>
+            <span class="save-status" style="margin-left:12px; font-weight:bold;"></span>
           </div>
         </div>
+      </section>
 
-        <div>
-          <div class="card">
-            <h2>지각의 두께(d)</h2>
-            <div class="calc-result-callout" id="calcResultDisplay" style="margin-top: 8px; font-size: 1.45rem;">
-              산출된 지각의 두께: <strong>41.9 km</strong>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>지진파 전파 및 도달 시뮬레이션</h2>
-            <p class="desc" style="color:var(--accent); font-weight:bold; font-size:0.85rem;">
-              [개선됨] 가로/세로 1:1 완벽 등방성 축척을 적용하여, 지진파가 임계각으로 꺾이는 실제 물리적 비율이 화면상에 수학적으로 정확히 일치하게 표시됩니다.
-            </p>
-
-            <div class="control-panel" style="margin-bottom: 12px; padding: 12px;">
-              <div class="control-row" style="margin-bottom:0;">
-                <label style="width:130px;">관측소 거리 (x):</label>
-                <input type="range" id="simDist" min="30" max="450" step="5" value="260" oninput="updateSimDist()">
-                <div class="value-badge" id="simDistVal">260 km</div>
-              </div>
-            </div>
-
-            <div class="sim-container">
-              <canvas id="waveCanvas" width="600" height="240"></canvas>
-              <div class="sim-controls">
-                <div>
-                  <button class="btn btn-primary" id="btnPlaySim" onclick="toggleSim()">재생</button>
+      <!-- TAB 2 -->
+      <section id="tab-1" class="tab-pane">
+        <div class="grid-2">
+          <div>
+            <div class="card">
+              <h2 style="margin-bottom:14px;">인터랙티브 파라미터 제어 & 주시곡선</h2>
+              <div class="control-panel">
+                <div class="control-row">
+                  <label>지각 속도(v₁):</label>
+                  <input type="range" id="paramV1" min="4.5" max="7.0" step="0.1" value="5.6" oninput="updateAllModels()">
+                  <div class="value-badge" id="v1Val">5.6 km/s</div>
                 </div>
-                <div id="simTimer" style="font-weight: bold; color: #38bdf8;">시뮬레이션 시간: 0.0 s</div>
+                <div class="control-row">
+                  <label>맨틀 속도(v₂):</label>
+                  <input type="range" id="paramV2" min="7.0" max="9.0" step="0.1" value="8.0" oninput="updateAllModels()">
+                  <div class="value-badge" id="v2Val">8.0 km/s</div>
+                </div>
+                <div class="control-row">
+                  <label>교차 거리(D):</label>
+                  <input type="range" id="paramD" min="120" max="300" step="1" value="250" oninput="updateAllModels()">
+                  <div class="value-badge" id="dVal">250 km</div>
+                </div>
+              </div>
+              
+              <div style="position: relative; height: 320px;">
+                <canvas id="travelTimeChart"></canvas>
+              </div>
+              
+              <div class="qa-card">
+                <h3 style="font-size:1.15rem; color:var(--primary); margin-bottom:16px;">주시곡선 심층 해석 탐구 과제</h3>
+                
+                <div class="qa-item">
+                  <div class="qa-label"><span class="q-num">Q1</span><span>직접파 추세선의 기울기보다 굴절파 추세선의 기울기가 완만한 이유를 서술하시오.</span></div>
+                  <textarea id="tab2_q1" class="auto-textarea" placeholder="답변을 입력하세요..." oninput="autoResize(this)"></textarea>
+                  <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
+                </div>
+                <div class="qa-item">
+                  <div class="qa-label"><span class="q-num">Q2</span><span>굴절파 추세선을 y축(진앙 거리=0)까지 연장했을 때 만나는 시간 절편(t₀)은 물리적으로 무엇을 의미하는지 서술하시오.</span></div>
+                  <textarea id="tab2_q2" class="auto-textarea" placeholder="답변을 입력하세요..." oninput="autoResize(this)"></textarea>
+                  <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
+                </div>
+                <div class="qa-item">
+                  <div class="qa-label"><span class="q-num">Q3</span><span>지각 속도(v₁), 맨틀 속도(v₂), 지각의 두께(d)를 각각 변화시킬 때, '교차 거리(D)'는 각각 어떻게 변하는지 관찰하고 그 이유(물리적 관계)를 서술하시오.</span></div>
+                  <textarea id="tab2_q3" class="auto-textarea" placeholder="답변을 입력하세요..." oninput="autoResize(this)"></textarea>
+                  <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
+                </div>
+
+                <button class="btn-submit" onclick="submitAllAnswers()">전체 답변 2차 저장 (수시로 누르세요)</button>
+                <span class="save-status" style="margin-left:12px; font-weight:bold;"></span>
               </div>
             </div>
+          </div>
+          
+          <div>
+            <div class="card">
+              <h2>지각의 두께(d)</h2>
+              <div class="calc-result-callout" id="calcResultDisplay">산출 대기중...</div>
+            </div>
+            <div class="card">
+              <h2>지진파 전파 시뮬레이션</h2>
+              <p style="color:var(--accent); font-weight:bold; font-size:0.85rem; margin-bottom:10px;">가로/세로 1:1 완벽 등방성 축척 적용 (임계각 굴절 물리 구현)</p>
+              
+              <div class="control-panel" style="padding:12px; margin-bottom:0;">
+                <div class="control-row" style="margin-bottom:0;">
+                  <label style="width:130px;">관측소 거리 (x):</label>
+                  <input type="range" id="simDist" min="30" max="450" step="5" value="260" oninput="updateSimDist()">
+                  <div class="value-badge" id="simDistVal">260 km</div>
+                </div>
+              </div>
 
-            <div id="simRaceOutcome" style="margin-top: 10px; font-size: 0.92rem; font-weight: 600; padding: 8px 12px; border-radius: 6px; background: #f1f5f9;">
+              <div class="sim-container">
+                <canvas id="waveCanvas" width="600" height="240"></canvas>
+                <div class="sim-controls">
+                  <button class="btn-primary" id="btnPlaySim" onclick="toggleSim()">재생</button>
+                  <div id="simTimer" style="font-weight: bold; color: #38bdf8;">시뮬레이션 시간: 0.0 s</div>
+                </div>
+              </div>
+              <div id="simRaceOutcome" style="margin-top: 10px; font-size: 0.92rem; font-weight: 600; padding: 8px 12px; border-radius: 6px; background: #f1f5f9;"></div>
             </div>
           </div>
-
         </div>
+      </section>
 
-      </div>
-    </section>
-
-    <!-- ==========================================
-         TAB 3: A(인천), B(부산), C(광주) & 엄선된 관측소 선택 & 작도
-         ========================================== -->
-    <section id="tab-2" class="tab-pane">
-      <div class="grid-2">
-
-        <div>
-          <div class="card" id="mapCard">
-            <div class="card-header-flex">
-              <h2>구글 지도 연계형 진앙 결정</h2>
-              <button class="btn btn-primary" onclick="saveMapAsImage()" style="background:#059669;">
-                📷 지도 저장 (PNG 다운로드)
-              </button>
-            </div>
-            <p class="desc">
-              1번 탭의 P파 주행시간 기초자료 중 세 원이 겹쳐 <strong>공통현 교차를 통해 진앙(E)이 정확히 결정되는 관측소</strong>만 선택할 수 있습니다.
-            </p>
-
-            <div class="station-selector-box">
+      <!-- TAB 3 -->
+      <section id="tab-2" class="tab-pane">
+        <div class="grid-2">
+          <div class="card">
+            <h2>구글 지도 연계형 진앙 결정</h2>
+            <p style="color:var(--text-muted); font-size:0.92rem; margin-bottom:14px;">세 원이 겹쳐 <strong>공통현 교차를 통해 진앙(E)이 정확히 결정되는 관측소</strong>를 선택해 작도합니다.</p>
+            
+            <div style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:14px; display:flex; gap:15px; flex-wrap:wrap;">
               <div>
                 <label style="font-weight:bold; color:#2563eb;">A(인천):</label>
-                <select id="selectIncheon" onchange="onStationSelectionChange()">
+                <select id="selectIncheon" style="padding:6px; border-radius:6px; font-weight:bold;" onchange="drawEpicenterCircles()">
                   <option value="10">관측소 #10 (진앙거리 201.7 km)</option>
-                  <option value="8">관측소 #8 (진앙거리 188.6 km)</option>
                 </select>
               </div>
               <div>
                 <label style="font-weight:bold; color:#9333ea;">B(부산):</label>
-                <select id="selectBusan" onchange="onStationSelectionChange()">
+                <select id="selectBusan" style="padding:6px; border-radius:6px; font-weight:bold;" onchange="drawEpicenterCircles()">
                   <option value="6">관측소 #6 (진앙거리 138.7 km)</option>
                   <option value="7">관측소 #7 (진앙거리 150.1 km)</option>
                 </select>
               </div>
               <div>
                 <label style="font-weight:bold; color:#16a34a;">C(광주):</label>
-                <select id="selectGwangju" onchange="onStationSelectionChange()">
+                <select id="selectGwangju" style="padding:6px; border-radius:6px; font-weight:bold;" onchange="drawEpicenterCircles()">
                   <option value="9">관측소 #9 (진앙거리 199.4 km)</option>
                   <option value="8">관측소 #8 (진앙거리 188.6 km)</option>
                 </select>
               </div>
             </div>
-
+            
             <div id="map"></div>
-
+            
             <div style="margin-top: 14px; display: flex; gap: 10px;">
-              <button class="btn btn-primary" onclick="drawEpicenterCircles()">진원 거리(R) 원 작도하기</button>
-              <button class="btn btn-outline" onclick="resetMapCircles()">원 지우기</button>
+              <button class="btn-primary" onclick="drawEpicenterCircles()">진원 거리(R) 원 작도하기</button>
+              <button class="btn-outline" style="background:#059669;" onclick="saveMapAsImage()">📷 지도 캡처하여 저장 (PNG)</button>
             </div>
           </div>
-        </div>
-
-        <div>
+          
           <div class="card">
             <h2>진앙 및 진원 깊이 탐구 과제</h2>
-            <p class="desc">
+            <p style="color:var(--text-muted); font-size:0.92rem; margin-bottom:20px;">
               지도를 다운로드하여 그림판에서 두 원의 교점을 잇는 공통현을 그어 <strong>진앙(E)</strong>을 표시한 뒤 첨부하고, 피타고라스 정리를 이용해 <strong>진원 깊이</strong>를 계산하세요.
             </p>
 
             <div class="qa-item">
-              <div class="qa-label">
-                <span class="q-num">1</span>
-                <span>진앙 거리 원이 작도된 이미지를 그림판 등을 이용해 진앙 지점을 표시하고 첨부하시오.</span>
-              </div>
+              <div class="qa-label"><span class="q-num">1</span><span>진앙 거리 원이 작도된 이미지를 그림판 등을 이용해 진앙 지점을 표시하고 첨부하시오.</span></div>
               <div class="image-preview-container">
                 <input type="file" id="epicenterImageInput" accept="image/*" onchange="handleImageUpload(event)" style="font-size:0.9rem;">
                 <p style="font-size:0.8rem; color:#64748b; margin-top:6px;">* 그림판에서 공통현의 교점(진앙 E)을 표시한 뒤 저장한 이미지 파일을 선택하세요.</p>
-                <img id="imagePreview" class="image-preview" alt="진앙 표시 이미지 미리보기">
+                <img id="imagePreview" class="image-preview" alt="미리보기">
               </div>
             </div>
-
+            
             <div class="qa-item" style="margin-top:20px;">
-              <div class="qa-label">
-                <span class="q-num">2</span>
-                <span>위 그림 및 관측 자료를 이용하여 진원 깊이를 구하시오. (풀이 과정 및 산출값 서술)</span>
-              </div>
+              <div class="qa-label"><span class="q-num">2</span><span>위 그림 및 관측 자료를 이용하여 진원 깊이를 구하시오. (풀이 과정 및 산출값 서술)</span></div>
               <textarea id="tab3_q2" class="auto-textarea" style="min-height: 125px;" placeholder="풀이 과정을 상세히 서술하세요 (예: 진원 거리 R과 진앙 거리 d, 피타고라스 정리 h = √(R² - d²) 적용)..." oninput="autoResize(this)"></textarea>
               <p class="input-tip">[입력 팁] 제곱은 ^2, 루트는 √ (또는 '루트'), 분수는 a/b 로 적어보세요.</p>
             </div>
 
             <div style="margin-top: 18px;">
-              <button class="btn-submit" onclick="submitTab3Answers()">답변 및 그림 제출</button>
-              <span id="tab3_status" style="margin-left:12px; font-size:0.88rem; font-weight:600;"></span>
+              <button class="btn-submit" style="background: #059669;" onclick="submitAllAnswers()">🚀 모든 답변 및 그림 최종 제출</button>
+              <span class="save-status" style="margin-left:12px; font-weight:bold;"></span>
             </div>
           </div>
         </div>
-
-      </div>
-    </section>
-
-  </main>
+      </section>
+    </main>
+  </div>
 
   <script>
-    /* =========================================================================
-       전역 변수 설정
-       ========================================================================= */
-    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzN-gfk7Tctkbf_u0Sh6b_jgnj-aRmuACpnNiNoadlIlhW516Adcj8NSH7OEn1R2DPRTA/exec";
+    // =========================================================================
+    // ★ 선생님의 웹앱 URL을 입력해 주세요! ★
+    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzZx_OjMqiXM44S6CLzMhBDqnC06GErMAuoSp7B4qSA_TzNbgaHED2aKchB9xyAIUaQBw/exec"; 
+    // =========================================================================
 
-    let currentStudentId = "";
-    let currentPassword = "";
+    let currentStudentId = "", currentStudentName = "", currentLoginRole = 'student';
     let uploadedImageBase64 = "";
-    let currentLoginRole = 'student';
-    
-    let chart = null;
-    let tab1Chart = null;
-    let currentV1 = 5.6;
-    let currentV2 = 8.0;
-    let currentD = 208;
-    let currentThickness = 41.9;
 
-    let simAnimationId = null;
-    let simIsPlaying = false;
-    let simCurrentTime = 0;
-    let targetDist = 260;
+    function fetchGAS(payload) {
+      return fetch(GAS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        redirect: 'follow',
+        body: JSON.stringify(payload)
+      }).then(res => res.json());
+    }
 
-    let leafletMap = null;
-    let stationCircles = [];
-    const focalDepthH = 48.0;
-    const geoStations = {
-      A: { name: "A: 인천 관측소", lat: 37.4563, lng: 126.7052, color: "#2563eb" },
-      B: { name: "B: 부산 관측소", lat: 35.1796, lng: 129.0756, color: "#9333ea" },
-      C: { name: "C: 광주 관측소", lat: 35.1595, lng: 126.8526, color: "#16a34a" }
-    };
-
-    /* =========================================================================
-       로그인 및 교사 대시보드
-       ========================================================================= */
     function handleLogin() {
       const idInput = document.getElementById('inputStudentId').value.trim();
       const pwdInput = document.getElementById('inputPassword').value.trim();
+      const btn = document.getElementById('btnLoginSubmit');
 
-      if (!idInput) { alert("ID를 입력해 주세요."); return; }
+      if (!idInput) { alert("ID(또는 학번)를 입력해 주세요."); return; }
       if (!pwdInput) { alert("비밀번호를 입력해 주세요."); return; }
 
-      const btn = document.getElementById('btnLoginSubmit');
-      btn.innerText = "접속 중...";
+      btn.innerText = "데이터 연동 중..."; btn.disabled = true;
 
-      // 교사 계정 식별
-      const isTeacher = (idInput.toLowerCase().includes('teacher') || idInput.includes('교사') || idInput === 'admin');
-
-      currentStudentId = idInput;
-      currentPassword = pwdInput;
-      currentLoginRole = isTeacher ? 'teacher' : 'student';
-
-      if (isTeacher) {
-        document.getElementById('studentDisplay').innerText = `교사 모드 (${currentStudentId})`;
-        document.getElementById('studentDisplay').style.background = "rgba(99, 102, 241, 0.3)";
-        document.getElementById('studentDisplay').style.color = "#c7d2fe";
-        document.getElementById('btnTeacherDash').style.display = "inline-flex";
-      } else {
-        document.getElementById('studentDisplay').innerText = `ID: ${currentStudentId} (접속됨)`;
-      }
-
-      document.getElementById('loginModal').style.display = 'none';
-
-      // 구글 스프레드시트 로그인 기록 연동
-      if (GAS_ENDPOINT) {
-        fetch(GAS_ENDPOINT, {
-          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'login', studentId: currentStudentId, password: currentPassword })
-        }).catch(err => console.error("로그인 전송 오류:", err));
-      }
-
-      // 교사로 로그인 시 대시보드를 바로 띄움
-      if (isTeacher) {
-        openTeacherDashboard();
-      }
-      btn.innerText = "탐구 시작";
-    }
-
-    function logout() {
-      currentStudentId = "";
-      currentPassword = "";
-      currentLoginRole = 'student';
-
-      document.getElementById('inputStudentId').value = "";
-      document.getElementById('inputPassword').value = "";
-      document.getElementById('btnTeacherDash').style.display = "none";
-      document.getElementById('studentDisplay').innerText = "로그인 대기 중";
-      document.getElementById('studentDisplay').style.background = "rgba(255, 255, 255, 0.15)";
-      document.getElementById('studentDisplay').style.color = "#93c5fd";
-
-      document.getElementById('loginModal').style.display = 'flex';
-      closeTeacherDashboard();
-      
-      // 입력 폼들 초기화
-      document.querySelectorAll('textarea').forEach(ta => ta.value = '');
-      document.getElementById('imagePreview').style.display = 'none';
-      uploadedImageBase64 = "";
-    }
-
-    function openTeacherDashboard() {
-      document.getElementById('teacherDashboardModal').style.display = 'flex';
-      refreshStudentSubmissions();
-    }
-
-    function closeTeacherDashboard() {
-      document.getElementById('teacherDashboardModal').style.display = 'none';
-    }
-
-    function openGoogleSheetLink() {
-      if (GAS_ENDPOINT) {
-        window.open(GAS_ENDPOINT, '_blank');
-      } else {
-        alert("코드 상단에 구글 Apps Script Web App URL이 설정되지 않았습니다.");
-      }
-    }
-
-    let allSubmissionsData = [];
-    let selectedStudentIndex = 0;
-
-    function refreshStudentSubmissions() {
-      const listContainer = document.getElementById('teacherStudentListContainer');
-      if (listContainer) {
-        listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b;">자료 동기화 중...</div>`;
-      }
-
-      if (GAS_ENDPOINT) {
-        fetch(GAS_ENDPOINT + "?action=getFullSubmissions")
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.submissions && data.submissions.length > 0) {
-              allSubmissionsData = data.submissions;
-            } else {
-              allSubmissionsData = getComprehensiveMockData();
+      fetchGAS({ action: 'login', studentId: idInput, password: pwdInput })
+      .then(data => {
+        if (data.status === 'success') {
+          currentStudentId = idInput;
+          currentLoginRole = data.role;
+          
+          if (data.role === 'teacher') {
+            document.getElementById('studentDisplay').innerText = `👨‍🏫 교사 모드`;
+            document.getElementById('teacher-view').style.display = 'block';
+            document.getElementById('student-view').style.display = 'none';
+            loadTeacherDashboard();
+          } else {
+            currentStudentName = data.name;
+            document.getElementById('studentDisplay').innerText = `학번: ${idInput} ${data.name} (접속됨)`;
+            document.getElementById('teacher-view').style.display = 'none';
+            document.getElementById('student-view').style.display = 'flex';
+            document.getElementById('btnStudentPdf').style.display = 'block';
+            
+            if(data.answers) {
+              document.getElementById('tab1_q1').value = data.answers.t1_q1 || "";
+              document.getElementById('tab1_q2').value = data.answers.t1_q2 || "";
+              document.getElementById('tab2_q1').value = data.answers.t2_q1 || "";
+              document.getElementById('tab2_q2').value = data.answers.t2_q2 || "";
+              document.getElementById('tab2_q3').value = data.answers.t2_q3 || "";
+              document.getElementById('tab3_q2').value = data.answers.t3_q2 || "";
+              
+              if (data.answers.t3_img && data.answers.t3_img.startsWith('data:image')) {
+                uploadedImageBase64 = data.answers.t3_img;
+                document.getElementById('imagePreview').src = uploadedImageBase64;
+                document.getElementById('imagePreview').style.display = 'block';
+              }
+              setTimeout(() => { document.querySelectorAll('.auto-textarea').forEach(el => autoResize(el)); }, 100);
             }
-            renderStudentListView();
-          })
-          .catch(err => {
-            console.log("시트 연동 대기: 로컬 및 세션 데이터 로드", err);
-            allSubmissionsData = getComprehensiveMockData();
-            renderStudentListView();
+          }
+          document.getElementById('loginModal').style.display = 'none';
+          
+          setTimeout(() => {
+            if(tab1Chart) tab1Chart.resize();
+            if(chart2) chart2.resize();
+            if(leafletMap) leafletMap.invalidateSize();
+          }, 300);
+
+        } else {
+          alert("로그인 실패: " + data.msg);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("서버 연결에 실패했습니다. 구글 시트 배포 설정을 확인해 주세요.");
+      })
+      .finally(() => { btn.innerText = "접속하기"; btn.disabled = false; });
+    }
+
+    function submitAllAnswers() {
+      const statusSpans = document.querySelectorAll('.save-status');
+      statusSpans.forEach(span => { span.style.color = "var(--primary-light)"; span.innerText = "저장 중..."; });
+
+      const payload = {
+        action: 'submitAll',
+        studentId: currentStudentId,
+        answers: {
+          t1_q1: document.getElementById('tab1_q1').value.trim(),
+          t1_q2: document.getElementById('tab1_q2').value.trim(),
+          t2_q1: document.getElementById('tab2_q1').value.trim(),
+          t2_q2: document.getElementById('tab2_q2').value.trim(),
+          t2_q3: document.getElementById('tab2_q3').value.trim(),
+          t3_img: uploadedImageBase64,
+          t3_q2: document.getElementById('tab3_q2').value.trim()
+        }
+      };
+      
+      fetchGAS(payload)
+      .then(res => {
+        if(res.status === 'success') {
+          statusSpans.forEach(span => { span.style.color = "var(--success)"; span.innerText = "✓ 성공적으로 저장되었습니다!"; });
+          setTimeout(() => { statusSpans.forEach(span => span.innerText = ""); }, 3000);
+        } else {
+          statusSpans.forEach(span => { span.style.color = "var(--accent)"; span.innerText = "제출 오류 발생"; });
+        }
+      }).catch(err => {
+        statusSpans.forEach(span => { span.style.color = "var(--accent)"; span.innerText = "서버 연결 오류"; });
+      });
+    }
+
+    let allStudentsData = [];
+    function loadTeacherDashboard() {
+      const tbody = document.getElementById('teacher-table-body');
+      tbody.innerHTML = '<tr><td colspan="5">학생 데이터를 불러오는 중입니다...</td></tr>';
+      
+      fetchGAS({ action: 'getTeacherData' })
+      .then(data => {
+        if (data.status === 'success') {
+          allStudentsData = data.students;
+          tbody.innerHTML = '';
+          if(allStudentsData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">등록된 학생 데이터가 없습니다.</td></tr>';
+            return;
+          }
+
+          allStudentsData.forEach((st, index) => {
+            const statusHtml = st.submitted 
+              ? `<span class="status-badge status-yes">제출 완료</span>` 
+              : `<span class="status-badge status-no">미제출</span>`;
+            const timeHtml = st.submitTime ? st.submitTime : '-';
+            const btnHtml = st.submitted 
+              ? `<button class="btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="generatePDFForStudent(${index})">📄 PDF 다운로드</button>`
+              : `<button class="btn-outline" style="padding:6px 12px; font-size:0.85rem; background:#cbd5e1; color:#64748b; cursor:not-allowed;" disabled>보고서 없음</button>`;
+            
+            tbody.innerHTML += `
+              <tr>
+                <td><strong>${st.id}</strong></td>
+                <td>${st.name}</td>
+                <td>${statusHtml}</td>
+                <td style="font-size:0.85rem; color:#64748b;">${timeHtml}</td>
+                <td>${btnHtml}</td>
+              </tr>
+            `;
           });
-      } else {
-        allSubmissionsData = getComprehensiveMockData();
-        renderStudentListView();
-      }
+        }
+      })
+      .catch(err => { tbody.innerHTML = '<tr><td colspan="5" style="color:red;">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>'; });
     }
 
-    function getComprehensiveMockData() {
-      const list = [];
-      if (currentStudentId && currentStudentId !== 'teacher') {
-        list.push({
-          id: currentStudentId, time: new Date().toLocaleTimeString(),
-          tab1_q1: document.getElementById('tab1_q1').value || "미작성", tab1_q2: document.getElementById('tab1_q2').value || "미작성",
-          tab2_q1: document.getElementById('tab2_q1').value || "미작성", tab2_q2: document.getElementById('tab2_q2').value || "미작성", tab2_q3: document.getElementById('tab2_q3').value || "미작성",
-          tab3_img: uploadedImageBase64 || null, tab3_q2: document.getElementById('tab3_q2').value || "미작성"
-        });
-      }
-      list.push({
-        id: "20401 (모범 답안)", time: "10:32:15",
-        tab1_q1: "직접파와 굴절파 추세선이 만나는 교점의 x축 좌표를 판독하면 교차 거리 D = 약 208 km이다.",
-        tab1_q2: "공식 d = (D/2) * √((v2 - v1)/(v2 + v1))에 D=208, v1=5.6, v2=8.0을 대입하면:\nd = (208/2) * √((8.0 - 5.6)/(8.0 + 5.6)) = 104 * √(2.4 / 13.6) ≈ 104 * 0.420 = 약 41.9 km로 계산된다.",
-        tab2_q1: "주시곡선의 기울기는 지진파 전파 속도의 역수(1/v)이다. 상부 맨틀을 통과하는 굴절파(Pn)의 속도(약 8.0 km/s)가 지각을 통과하는 직접파(Pg)의 속도(약 5.6 km/s)보다 훨씬 빠르기 때문에 굴절파 추세선의 기울기가 더 완만하다.",
-        tab2_q2: "굴절파 추세선의 y축 시간 절편(t0)은 굴절파가 지각을 뚫고 모호면까지 내려갔다가 다시 지표면으로 올라오는 데 걸리는 '지각 왕복 지연 시간'을 물리적으로 의미한다.",
-        tab2_q3: "1. 지각 두께 d가 두꺼워질수록 굴절파가 맨틀까지 갔다 오는 거리가 길어져 교차 거리 D는 증가한다.\n2. 지각 속도 v1이 증가하거나 맨틀 속도 v2가 감소하여 속도 차가 줄어들수록 맨틀 고속 질주 효과가 줄어들어 교차 거리 D는 증가한다.",
-        tab3_img: null,
-        tab3_q2: "세 원의 공통현이 모이는 교점 E를 진앙으로 결정한 뒤, 피타고라스 정리 R^2 = d^2 + h^2를 적용한다. 진원 거리 R = 154 km, 진앙 거리 d = 146 km를 대입하면 h = √(154^2 - 146^2) = √(23716 - 21316) = √2400 ≈ 약 48.99 km (약 49 km)로 도출된다."
-      });
-      return list;
+    function exportMyReportToPDF() {
+      const ans = {
+        t1_q1: document.getElementById('tab1_q1').value || '미작성',
+        t1_q2: document.getElementById('tab1_q2').value || '미작성',
+        t2_q1: document.getElementById('tab2_q1').value || '미작성',
+        t2_q2: document.getElementById('tab2_q2').value || '미작성',
+        t2_q3: document.getElementById('tab2_q3').value || '미작성',
+        t3_img: uploadedImageBase64,
+        t3_q2: document.getElementById('tab3_q2').value || '미작성'
+      };
+      executePDFGeneration(currentStudentId, currentStudentName, ans);
     }
 
-    function renderStudentListView(filterText = "") {
-      const listContainer = document.getElementById('teacherStudentListContainer');
-      if (!listContainer) return;
-      listContainer.innerHTML = '';
-
-      const filtered = allSubmissionsData.filter(s => s.id.includes(filterText));
-      document.getElementById('submissionCountBadge').innerText = `제출 인원: ${filtered.length}명`;
-
-      filtered.forEach((st, idx) => {
-        const itemCard = document.createElement('div');
-        itemCard.style.padding = "12px 14px";
-        itemCard.style.borderRadius = "8px";
-        itemCard.style.marginBottom = "8px";
-        itemCard.style.cursor = "pointer";
-        itemCard.style.border = idx === selectedStudentIndex ? "2px solid #1e3a8a" : "1px solid #e2e8f0";
-        itemCard.style.background = idx === selectedStudentIndex ? "#eff6ff" : "#ffffff";
-        itemCard.style.transition = "all 0.2s";
-
-        itemCard.onclick = () => {
-          selectedStudentIndex = idx;
-          renderStudentListView(filterText);
-          renderStudentDetailView(st);
-        };
-
-        itemCard.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="color:#1e3a8a; font-size:0.95rem;">ID: ${st.id}</strong>
-            <span style="font-size:0.75rem; color:#64748b;">${st.time}</span>
-          </div>
-          <div style="font-size:0.8rem; color:#475569; margin-top:4px;">
-            • 과제 상태: <span style="color:#059669; font-weight:bold;">서버 제출 완료</span>
-          </div>
-        `;
-        listContainer.appendChild(itemCard);
-      });
-
-      if (filtered.length > 0) {
-        renderStudentDetailView(filtered[selectedStudentIndex] || filtered[0]);
-      } else {
-        document.getElementById('teacherStudentDetailContainer').innerHTML = `<p style="text-align:center; color:#64748b; margin-top:80px;">검색된 학생이 없습니다.</p>`;
-      }
-    }
-
-    function renderStudentDetailView(st) {
-      const detailContainer = document.getElementById('teacherStudentDetailContainer');
-      if (!detailContainer) return;
-
-      let imgPreview = st.tab3_img 
-        ? `<div style="margin-top:10px; text-align:center;"><img src="${st.tab3_img}" style="max-width:550px; max-height:300px; border-radius:8px; border:1.5px solid #cbd5e1; box-shadow:0 2px 8px rgba(0,0,0,0.1);" /><br><span style="font-size:0.8rem; color:#64748b;">[학생이 첨부한 진앙 작도 완료 지도]</span></div>`
-        : `<div style="background:#fef2f2; border:1px dashed #f87171; padding:15px; border-radius:6px; color:#b91c1c; font-size:0.88rem; margin-top:8px;">* 제출된 진앙 작도 이미지가 없습니다.</div>`;
-
-      detailContainer.innerHTML = `
-        <div style="background:#ffffff; border-radius:12px; padding:24px; border:1px solid #e2e8f0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1e3a8a; padding-bottom:12px; margin-bottom:20px;">
-            <div>
-              <span style="background:#1e3a8a; color:white; font-size:0.8rem; padding:3px 8px; border-radius:4px; font-weight:bold;">ID</span>
-              <span style="font-size:1.35rem; font-weight:bold; color:#1e3a8a; margin-left:6px;">${st.id}</span>
-            </div>
-            <div style="font-size:0.88rem; color:#64748b;">최종 제출: <strong>${st.time}</strong></div>
-          </div>
-          <div style="margin-bottom:24px;">
-            <h3 style="font-size:1.05rem; color:#1e3a8a; border-left:4px solid #2563eb; padding-left:8px; margin-bottom:10px;">[1번 탭] P파 주행시간 기초자료 및 지각 두께 계산</h3>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin-bottom:10px;">
-              <p style="font-weight:bold; font-size:0.9rem; color:#334155; margin-bottom:6px;">Q1. 교차 거리</p>
-              <div style="background:white; padding:10px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.92rem; white-space:pre-wrap; line-height:1.6;">${st.tab1_q1}</div>
-            </div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px;">
-              <p style="font-weight:bold; font-size:0.9rem; color:#334155; margin-bottom:6px;">Q2. 지각 두께 계산</p>
-              <div style="background:white; padding:10px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.92rem; white-space:pre-wrap; line-height:1.6;">${st.tab1_q2}</div>
-            </div>
-          </div>
-          <div style="margin-bottom:24px;">
-            <h3 style="font-size:1.05rem; color:#1e3a8a; border-left:4px solid #2563eb; padding-left:8px; margin-bottom:10px;">[2번 탭] 주시곡선 심층 해석 과제</h3>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin-bottom:10px;">
-              <p style="font-weight:bold; font-size:0.9rem; color:#334155; margin-bottom:6px;">Q1. 기울기가 완만한 이유</p>
-              <div style="background:white; padding:10px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.92rem; white-space:pre-wrap; line-height:1.6;">${st.tab2_q1}</div>
-            </div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin-bottom:10px;">
-              <p style="font-weight:bold; font-size:0.9rem; color:#334155; margin-bottom:6px;">Q2. 시간 절편(t0)의 물리적 의미</p>
-              <div style="background:white; padding:10px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.92rem; white-space:pre-wrap; line-height:1.6;">${st.tab2_q2}</div>
-            </div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px;">
-              <p style="font-weight:bold; font-size:0.9rem; color:#334155; margin-bottom:6px;">Q3. 물리적 관계</p>
-              <div style="background:white; padding:10px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.92rem; white-space:pre-wrap; line-height:1.6;">${st.tab2_q3}</div>
-            </div>
-          </div>
-          <div>
-            <h3 style="font-size:1.05rem; color:#1e3a8a; border-left:4px solid #2563eb; padding-left:8px; margin-bottom:10px;">[3번 탭] 지도 기반 진앙 및 진원 깊이 결정</h3>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin-bottom:10px;">
-              <p style="font-weight:bold; font-size:0.9rem; color:#334155; margin-bottom:6px;">과제 1. 첨부 이미지</p>
-              ${imgPreview}
-            </div>
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px;">
-              <p style="font-weight:bold; font-size:0.9rem; color:#334155; margin-bottom:6px;">과제 2. 진원 깊이(h) 산출 풀이</p>
-              <div style="background:white; padding:10px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:0.92rem; white-space:pre-wrap; line-height:1.6;">${st.tab3_q2}</div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function filterSubmissions() {
-      const val = document.getElementById('teacherSearchInput').value.trim();
-      selectedStudentIndex = 0;
-      renderStudentListView(val);
-    }
-
-    function exportSubmissionsToCSV() {
-      if (!allSubmissionsData || allSubmissionsData.length === 0) {
-        alert("내보낼 학생 데이터가 없습니다."); return;
-      }
-      let csv = "\uFEFF학번,제출시간,1번탭_Q1(교차거리),1번탭_Q2(지각두께),2번탭_Q1(기울기),2번탭_Q2(t0의미),2번탭_Q3(물리적관계),3번탭_과제2(진원깊이풀이)\n";
-      allSubmissionsData.forEach(st => {
-        const clean = str => `"${(str || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`;
-        csv += `${clean(st.id)},${clean(st.time)},${clean(st.tab1_q1)},${clean(st.tab1_q2)},${clean(st.tab2_q1)},${clean(st.tab2_q2)},${clean(st.tab2_q3)},${clean(st.tab3_q2)}\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `지진파탐구_전체학생제출답변_${new Date().toISOString().slice(0,10)}.csv`;
-      link.click();
+    function generatePDFForStudent(index) {
+      const st = allStudentsData[index];
+      executePDFGeneration(st.id, st.name, st.answers);
     }
 
     /* =========================================================================
-       학생/교사 개인 작성 자료 PDF 저장 기능 (잘림 현상 해결 및 A4 최적화)
+       학생/교사 공통 PDF 저장 (완벽한 A4 규격 레이아웃 및 잘림 현상 방지)
        ========================================================================= */
-    function exportReportToPDF() {
-      let sId, q1_1, q1_2, q2_1, q2_2, q2_3, q3_2, imgB64;
-
-      // 교사가 대시보드를 열어놓고 저장버튼을 누른 경우, 선택된 학생의 '최신 서버 데이터'를 반영
-      if (currentLoginRole === 'teacher' && allSubmissionsData.length > 0) {
-        const st = allSubmissionsData[selectedStudentIndex] || allSubmissionsData[0];
-        sId = st.id;
-        q1_1 = st.tab1_q1;
-        q1_2 = st.tab1_q2;
-        q2_1 = st.tab2_q1;
-        q2_2 = st.tab2_q2;
-        q2_3 = st.tab2_q3;
-        q3_2 = st.tab3_q2;
-        imgB64 = st.tab3_img;
-      } else {
-        // 학생이 스스로 저장하는 경우, 화면에 입력된 값 사용
-        sId = currentStudentId || "미입력";
-        q1_1 = document.getElementById('tab1_q1').value.trim() || "(작성된 내용 없음)";
-        q1_2 = document.getElementById('tab1_q2').value.trim() || "(작성된 내용 없음)";
-        q2_1 = document.getElementById('tab2_q1').value.trim() || "(작성된 내용 없음)";
-        q2_2 = document.getElementById('tab2_q2').value.trim() || "(작성된 내용 없음)";
-        q2_3 = document.getElementById('tab2_q3').value.trim() || "(작성된 내용 없음)";
-        q3_2 = document.getElementById('tab3_q2').value.trim() || "(작성된 내용 없음)";
-        imgB64 = uploadedImageBase64;
-      }
-
+    function executePDFGeneration(sId, sName, ans) {
       const reportDiv = document.createElement('div');
       
-      // 화면 밖으로 빼서 794px(A4 비율) 고정하여 렌더링 → 우측 잘림 및 여백 100% 해결
-      reportDiv.style.position = 'absolute';
-      reportDiv.style.left = '-9999px';
-      reportDiv.style.top = '0';
+      // 핵심 해결: 눈에 보이지 않도록 좌상단에 A4(794px) 사이즈로 임시 렌더링
       reportDiv.style.width = '794px'; 
-      reportDiv.style.boxSizing = 'border-box';
-      reportDiv.style.padding = '30px';
+      reportDiv.style.position = 'absolute';
+      reportDiv.style.left = '0px';
+      reportDiv.style.top = '0px';
+      reportDiv.style.zIndex = '-9999';
       reportDiv.style.backgroundColor = '#ffffff';
+      reportDiv.style.padding = '20px';
+      reportDiv.style.boxSizing = 'border-box';
       reportDiv.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       reportDiv.style.color = '#1e293b';
       reportDiv.style.lineHeight = '1.6';
 
-      let imgTag = imgB64 
-        ? `<div style="text-align:center; margin:12px 0;"><img src="${imgB64}" style="max-width:100%; max-height:350px; border:1px solid #cbd5e1; border-radius:6px; object-fit:contain;" /></div>`
-        : `<p style="color:#dc2626; font-size:0.9rem; margin-top:6px;">* 첨부된 진앙 작도 이미지가 없습니다.</p>`;
+      let imgHtml = '';
+      if (ans.t3_img && ans.t3_img.startsWith('data:image')) {
+        imgHtml = `<div style="text-align:center; margin:15px 0;"><img src="${ans.t3_img}" style="max-width:100%; max-height:350px; border:1px solid #cbd5e1; border-radius:6px; object-fit:contain;" /></div>`;
+      } else {
+        imgHtml = `<div style="color:#ef4444; font-size:0.9rem; margin-top:6px;">* 첨부된 진앙 작도 이미지가 없습니다.</div>`;
+      }
 
       reportDiv.innerHTML = `
         <div style="border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 20px;">
-          <h1 style="font-size: 1.6rem; color: #1e3a8a; margin: 0 0 6px 0;">지구시스템과학 지진파 탐구 활동 보고서</h1>
+          <h1 style="font-size: 1.6rem; color: #1e3a8a; margin: 0 0 6px 0;">지구시스템과학 탐구활동 보고서</h1>
           <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: #475569;">
-            <span><strong>작성자 (ID):</strong> ${sId}</span>
+            <span><strong>학번:</strong> ${sId}</span>
+            <span><strong>이름:</strong> ${sName || "이름 미상"}</span>
             <span><strong>출력 일시:</strong> ${new Date().toLocaleString()}</span>
           </div>
         </div>
 
         <div style="margin-bottom: 22px;">
           <h2 style="font-size: 1.15rem; color: #1e3a8a; border-left: 4px solid #3b82f6; padding-left: 8px; margin-bottom: 10px;">
-            1. P파 주행시간 기초자료 및 지각 두께 산출
+            1. P파 주행시간 기초자료 및 지각 두께
           </h2>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 10px; word-break: break-all;">
-            <p style="font-weight: bold; margin-bottom: 4px;">[문제 1] 그래프를 이용하여 교차 거리를 구하시오.</p>
-            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${q1_1}</p>
+            <p style="font-weight: bold; margin-bottom: 4px; font-size:0.95rem;">Q1. 위 그래프를 이용하여 교차 거리를 구하시오.</p>
+            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size:0.95rem;">${ans.t1_q1 || "미작성"}</p>
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; word-break: break-all;">
-            <p style="font-weight: bold; margin-bottom: 4px;">[문제 2] 위에서 구한 교차 거리를 이용하여 지각의 두께를 계산하시오.</p>
-            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${q1_2}</p>
+            <p style="font-weight: bold; margin-bottom: 4px; font-size:0.95rem;">Q2. 교차 거리를 이용하여 지각의 두께를 계산하시오.</p>
+            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size:0.95rem;">${ans.t1_q2 || "미작성"}</p>
           </div>
         </div>
 
@@ -1287,16 +589,16 @@
             2. 주시곡선 심층 해석 과제
           </h2>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 10px; word-break: break-all;">
-            <p style="font-weight: bold; margin-bottom: 4px;">[Q1] 직접파 추세선의 기울기보다 굴절파 추세선의 기울기가 완만한 이유</p>
-            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${q2_1}</p>
+            <p style="font-weight: bold; margin-bottom: 4px; font-size:0.95rem;">Q1. 직접파 추세선의 기울기보다 굴절파 추세선의 기울기가 완만한 이유를 서술하시오.</p>
+            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size:0.95rem;">${ans.t2_q1 || "미작성"}</p>
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 10px; word-break: break-all;">
-            <p style="font-weight: bold; margin-bottom: 4px;">[Q2] 굴절파 추세선의 시간 절편(t₀)의 물리적 의미</p>
-            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${q2_2}</p>
+            <p style="font-weight: bold; margin-bottom: 4px; font-size:0.95rem;">Q2. 굴절파 추세선을 연장했을 때 만나는 시간 절편(t₀)의 물리적 의미를 서술하시오.</p>
+            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size:0.95rem;">${ans.t2_q2 || "미작성"}</p>
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; word-break: break-all;">
-            <p style="font-weight: bold; margin-bottom: 4px;">[Q3] v₁, v₂, d 변화에 따른 교차 거리(D)의 물리적 관계</p>
-            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${q2_3}</p>
+            <p style="font-weight: bold; margin-bottom: 4px; font-size:0.95rem;">Q3. 변수(지각/맨틀 속도, 두께) 변화에 따른 교차 거리(D) 변화와 이유를 서술하시오.</p>
+            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size:0.95rem;">${ans.t2_q3 || "미작성"}</p>
           </div>
         </div>
 
@@ -1305,37 +607,65 @@
             3. 지도 기반 진앙 및 진원 깊이 결정
           </h2>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 10px; word-break: break-all;">
-            <p style="font-weight: bold; margin-bottom: 4px;">[과제 1] 진앙 거리 원 작도 및 진앙(E) 표시 첨부 이미지</p>
-            ${imgTag}
+            <p style="font-weight: bold; margin-bottom: 4px; font-size:0.95rem;">과제 1. 진앙 지점을 표시한 첨부 이미지</p>
+            ${imgHtml}
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; word-break: break-all;">
-            <p style="font-weight: bold; margin-bottom: 4px;">[과제 2] 진원 깊이(h) 산출 풀이 과정</p>
-            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">${q3_2}</p>
+            <p style="font-weight: bold; margin-bottom: 4px; font-size:0.95rem;">과제 2. 진원 깊이를 구하는 풀이 과정 및 산출값</p>
+            <p style="white-space: pre-wrap; color: #334155; margin: 0; background: white; padding: 10px; border-radius: 4px; border: 1px solid #cbd5e1; font-size:0.95rem;">${ans.t3_q2 || "미작성"}</p>
           </div>
         </div>
       `;
-
+      
+      // DOM에 붙여야 html2canvas가 레이아웃을 정확하게 계산합니다.
       document.body.appendChild(reportDiv);
 
       const opt = {
-        margin: [15, 10, 15, 10], 
-        filename: `지진파탐구보고서_${sId}.pdf`,
+        margin: [10, 10, 10, 10], // top, left, bottom, right (mm 여백)
+        filename: `지구시스템과학_보고서_${sId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, windowWidth: 800 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            scrollY: 0,  // 스크롤 시 화면 밖으로 밀려나는 문제 원천 차단
+            scrollX: 0
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
+      alert(`${sId} 학생의 PDF 생성을 시작합니다. 잠시만 기다려주세요.`);
       html2pdf().set(opt).from(reportDiv).save().then(() => {
+        // PDF 생성 직후 임시 DOM 요소 깔끔하게 제거
         document.body.removeChild(reportDiv);
       });
     }
 
-    /* =========================================================================
-       1번 탭 데이터 설정
-       ========================================================================= */
+    function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          uploadedImageBase64 = evt.target.result;
+          document.getElementById('imagePreview').src = uploadedImageBase64;
+          document.getElementById('imagePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    
+    function autoResize(textarea) { textarea.style.height = 'auto'; textarea.style.height = textarea.scrollHeight + 'px'; }
+
+    function switchTab(index) {
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
+      document.querySelectorAll('.tab-pane').forEach((pane, i) => pane.classList.toggle('active', i === index));
+      if (index === 0) { setTimeout(() => { if (tab1Chart) tab1Chart.resize(); }, 100); }
+      else if (index === 1) { setTimeout(() => { if (chart2) chart2.resize(); }, 100); }
+      else if (index === 2) { setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 200); }
+    }
+
     const baseTimeSec = 48 * 60 + 49.4;
     const rawStations = [
-      { id: 1,  dist: 45.8,  arrStr: "48분 57.4초", arrSec: 48*60 + 57.4 },
+      { id: 1,  dist: 45.8,  arrStr: "48분 55.4초", arrSec: 48*60 + 55.4 }, 
       { id: 2,  dist: 59.8,  arrStr: "49분 00.3초", arrSec: 49*60 + 0.3 },
       { id: 3,  dist: 90.5,  arrStr: "49분 04.9초", arrSec: 49*60 + 4.9 },
       { id: 4,  dist: 109.3, arrStr: "49분 08.5초", arrSec: 49*60 + 8.5 },
@@ -1358,94 +688,69 @@
       { id: 21, dist: 402.0, arrStr: "49분 49.5초", arrSec: 49*60 + 49.5 },
       { id: 22, dist: 446.4, arrStr: "49분 54.4초", arrSec: 49*60 + 54.4 }
     ];
-
-    const stationData = rawStations.map(st => ({
-      ...st,
-      travelTime: Number((st.arrSec - baseTimeSec).toFixed(1))
-    }));
+    const stationData = rawStations.map(st => ({ ...st, travelTime: Number((st.arrSec - baseTimeSec).toFixed(1)) }));
 
     function renderTable() {
       const tbody = document.getElementById('tableBody');
-      tbody.innerHTML = '';
-      stationData.forEach(st => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>#${st.id}</strong></td>
-          <td>${st.dist.toFixed(1)}</td>
-          <td>${st.arrStr}</td>
-          <td><strong style="color:var(--primary);">${st.travelTime.toFixed(1)}</strong></td>
-        `;
-        tbody.appendChild(tr);
-      });
+      stationData.forEach(st => { tbody.innerHTML += `<tr><td><strong>#${st.id}</strong></td><td>${st.dist.toFixed(1)}</td><td>${st.arrStr}</td><td><strong style="color:var(--primary);">${st.travelTime.toFixed(1)}</strong></td></tr>`; });
     }
 
-    function switchTab(index) {
-      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
-      document.querySelectorAll('.tab-pane').forEach((pane, i) => {
-        pane.classList.toggle('active', i === index);
-      });
+    const formulaPlugin = {
+      id: 'formulaLabel',
+      afterDraw: (chart) => {
+        const ctx = chart.ctx;
+        ctx.save(); ctx.font = 'bold 15px sans-serif';
+        let xPg = chart.scales.x.getPixelForValue(110);
+        let yPg = chart.scales.y.getPixelForValue(0.1568 * 110 + 1.5626) + 22; 
+        ctx.fillStyle = '#2563eb'; ctx.fillText('y = 0.1568x + 1.5626', xPg, yPg);
 
-      if (index === 0) {
-        setTimeout(() => { if (tab1Chart) tab1Chart.resize(); }, 100);
-      } else if (index === 1) {
-        setTimeout(() => { if (chart) chart.resize(); }, 100);
-      } else if (index === 2) {
-        // 타이머를 늘려 화면 전환 완료 후 지도가 렌더링되도록 수정 (지도 안보임 해결)
-        setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 300);
+        let xPn = chart.scales.x.getPixelForValue(320);
+        let yPn = chart.scales.y.getPixelForValue(0.121 * 320 + 10.996) + 22;
+        ctx.fillStyle = '#dc2626'; ctx.fillText('y = 0.121x + 10.996', xPn, yPn);
+        ctx.restore();
       }
-    }
+    };
 
+    let tab1Chart = null;
     function initTab1Chart() {
       const ctx = document.getElementById('tab1Chart').getContext('2d');
-      const pgPts = stationData.filter(d => d.dist <= 208).map(d => ({ x: d.dist, y: d.travelTime }));
-      const pnPts = stationData.filter(d => d.dist > 208).map(d => ({ x: d.dist, y: d.travelTime }));
+      const pgPts = stationData.filter(d => d.dist <= 250).map(d => ({ x: d.dist, y: d.travelTime }));
+      const pnPts = stationData.filter(d => d.dist > 250).map(d => ({ x: d.dist, y: d.travelTime }));
+      const pgLine = [{ x: 0, y: 1.5626 }, { x: 260, y: (0.1568 * 260 + 1.5626) }];
+      const pnLine = [{ x: 200, y: (0.121 * 200 + 10.996) }, { x: 480, y: (0.121 * 480 + 10.996) }];
 
       tab1Chart = new Chart(ctx, {
         type: 'scatter',
         data: {
           datasets: [
-            { label: '직접파 구간 관측점 (Pg)', data: pgPts, backgroundColor: '#2563eb', pointRadius: 5 },
-            { label: '굴절파 구간 관측점 (Pn)', data: pnPts, backgroundColor: '#dc2626', pointRadius: 5 },
-            { type: 'line', label: '직접파 추세선 (Pg)', data: [{ x: 0, y: 0 }, { x: 230, y: +(230 / 5.6).toFixed(2) }], borderColor: '#2563eb', borderWidth: 2, borderDash: [4, 4], fill: false, pointRadius: 0 },
-            { type: 'line', label: '굴절파 추세선 (Pn)', data: [{ x: 190, y: +(190 / 8.0 + 10.9).toFixed(2) }, { x: 460, y: +(460 / 8.0 + 10.9).toFixed(2) }], borderColor: '#dc2626', borderWidth: 2, borderDash: [4, 4], fill: false, pointRadius: 0 }
+            { label: '관측 데이터 (Pg)', data: pgPts, backgroundColor: '#2563eb', pointRadius: 5 },
+            { label: '관측 데이터 (Pn)', data: pnPts, backgroundColor: '#dc2626', pointRadius: 5 },
+            { type: 'line', label: '직접파 추세선', data: pgLine, borderColor: '#2563eb', borderWidth: 2, borderDash: [5,5], fill: false, pointRadius: 0 },
+            { type: 'line', label: '굴절파 추세선', data: pnLine, borderColor: '#dc2626', borderWidth: 2, borderDash: [5,5], fill: false, pointRadius: 0 }
           ]
         },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { title: { display: true, text: '진앙 거리 - P파 주행 시간 그래프 (주시곡선)', font: { size: 14, weight: 'bold' } }, legend: { position: 'top' } },
-          scales: {
-            x: { type: 'linear', position: 'bottom', title: { display: true, text: '진앙 거리 (km)' }, min: 0, max: 480 },
-            y: { title: { display: true, text: 'P파 주행 시간 (초)' }, min: 0, max: 70 } // Y축 최대 70초
-          }
-        }
+        plugins: [formulaPlugin], 
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { type: 'linear', min: 0, max: 480, title: { display: true, text: '진앙 거리 (km)' } }, y: { min: 0, max: 70, title: { display: true, text: 'P파 주행 시간 (초)' } } } }
       });
     }
 
+    let chart2 = null;
+    let currentV1 = 5.6, currentV2 = 8.0, currentD = 250, currentThickness = 50.4;
     function initChart() {
       const ctx = document.getElementById('travelTimeChart').getContext('2d');
-      const pgPoints = stationData.filter(d => d.dist <= 208).map(d => ({ x: d.dist, y: d.travelTime }));
-      const pnPoints = stationData.filter(d => d.dist > 208).map(d => ({ x: d.dist, y: d.travelTime }));
-
-      chart = new Chart(ctx, {
+      chart2 = new Chart(ctx, {
         type: 'scatter',
         data: {
           datasets: [
-            { label: '관측 데이터 (Pg)', data: pgPoints, backgroundColor: '#2563eb', pointRadius: 4.5 },
-            { label: '관측 데이터 (Pn)', data: pnPoints, backgroundColor: '#dc2626', pointRadius: 4.5 },
-            { type: 'line', label: '직접파 추세선', data: [], borderColor: '#2563eb', borderWidth: 2.5, fill: false, pointRadius: 0 },
-            { type: 'line', label: '굴절파 추세선', data: [], borderColor: '#dc2626', borderWidth: 2.5, fill: false, pointRadius: 0 },
-            { label: '교차점 (D)', data: [], backgroundColor: '#8b5cf6', borderColor: '#6d28d9', borderWidth: 2, pointRadius: 8, pointStyle: 'rectRot' }
+            { type: 'line', label: '직접파', data: [], borderColor: '#2563eb', borderWidth: 2.5, fill: false, pointRadius: 0 },
+            { type: 'line', label: '굴절파', data: [], borderColor: '#dc2626', borderWidth: 2.5, fill: false, pointRadius: 0 },
+            { label: '교차점', data: [], backgroundColor: '#8b5cf6', borderColor: '#6d28d9', borderWidth: 2, pointRadius: 7, pointStyle: 'rectRot' }
           ]
         },
-        options: {
+        options: { 
           responsive: true, maintainAspectRatio: false, animation: false,
-          plugins: { title: { display: true, text: '진앙 거리 - P파 주행 시간 (주시곡선)', font: { size: 14, weight: 'bold' } }, legend: { display: false } },
-          scales: {
-            x: { type: 'linear', position: 'bottom', title: { display: true, text: '진앙 거리 (km)' }, min: 0, max: 500 },
-            y: { title: { display: true, text: 'P파 주행 시간 (초)' }, min: 0, max: 75 }
-          }
+          plugins: { title: { display: true, text: '파라미터 연동 주시곡선' }, legend: { display: false } },
+          scales: { x: { min: 0, max: 500, title: {display:true, text:'진앙 거리 (km)'} }, y: { min: 0, max: 75, title: {display:true, text:'시간 (초)'} } }
         }
       });
     }
@@ -1454,19 +759,15 @@
       currentV1 = parseFloat(document.getElementById('paramV1').value);
       currentV2 = parseFloat(document.getElementById('paramV2').value);
       currentD = parseFloat(document.getElementById('paramD').value);
-
+      
       document.getElementById('v1Val').innerText = currentV1.toFixed(1) + ' km/s';
       document.getElementById('v2Val').innerText = currentV2.toFixed(1) + ' km/s';
       document.getElementById('dVal').innerText = currentD + ' km';
-
-      if (currentV2 > currentV1) {
-        const velRatio = (currentV2 - currentV1) / (currentV2 + currentV1);
-        currentThickness = (currentD / 2) * Math.sqrt(velRatio);
+      
+      if (currentV2 > currentV1) { 
+        currentThickness = (currentD / 2) * Math.sqrt((currentV2 - currentV1) / (currentV2 + currentV1));
+        document.getElementById('calcResultDisplay').innerHTML = `산출된 지각의 두께 (d): <strong>${currentThickness.toFixed(1)} km</strong>`;
       }
-
-      document.getElementById('calcResultDisplay').innerHTML = `
-        산출된 지각의 두께 (d): <strong style="font-size:1.5rem; color:#1e3a8a;">${currentThickness.toFixed(1)} km</strong>
-      `;
 
       const directLine = [{ x: 0, y: 0 }, { x: 500, y: +(500 / currentV1).toFixed(2) }];
       const intercept = (currentD / currentV1) - (currentD / currentV2);
@@ -1474,95 +775,66 @@
         { x: Math.max(0, currentD - 80), y: +((Math.max(0, currentD - 80) / currentV2) + intercept).toFixed(2) },
         { x: 500, y: +((500 / currentV2) + intercept).toFixed(2) }
       ];
-
-      if (chart) {
-        chart.data.datasets[2].data = directLine;
-        chart.data.datasets[3].data = refractLine;
-        chart.data.datasets[4].data = [{ x: currentD, y: +(currentD / currentV1).toFixed(2) }];
-        chart.update();
+      if (chart2) {
+        chart2.data.datasets[0].data = directLine;
+        chart2.data.datasets[1].data = refractLine;
+        chart2.data.datasets[2].data = [{ x: currentD, y: +(currentD / currentV1).toFixed(2) }];
+        chart2.update();
       }
 
-      updateRaceOutcomeUI();
-      drawSimulationFrame(simCurrentTime);
+      updateRaceOutcomeUI(); drawSimulationFrame(simCurrentTime);
     }
 
-    /* =========================================================================
-       시뮬레이션 (1:1 Isotropic 등방성 스케일 완벽 물리 동기화)
-       ========================================================================= */
+    const simCanvas = document.getElementById('waveCanvas'); const simCtx = simCanvas.getContext('2d');
+    let simAnimationId = null, simIsPlaying = false, simCurrentTime = 0, targetDist = 260;
+
     function updateSimDist() {
       targetDist = parseFloat(document.getElementById('simDist').value);
       document.getElementById('simDistVal').innerText = targetDist + ' km';
-      updateRaceOutcomeUI();
-      drawSimulationFrame(simCurrentTime);
+      updateRaceOutcomeUI(); drawSimulationFrame(simCurrentTime);
     }
 
     function updateRaceOutcomeUI() {
       const tDirect = targetDist / currentV1;
       const tIntercept = (currentD / currentV1) - (currentD / currentV2);
       const tRefract = (targetDist / currentV2) + tIntercept;
-
       const outcomeDiv = document.getElementById('simRaceOutcome');
+      
       if (targetDist < currentD) {
         const diff = (tRefract - tDirect).toFixed(1);
-        outcomeDiv.innerHTML = `<span style="color:#2563eb;">⚡ 관측점(${targetDist}km)은 <strong>교차 거리(${currentD}km) 이전</strong>입니다.</span> 직접파(${tDirect.toFixed(1)}초)가 굴절파보다 ${diff}초 일찍 도달합니다.`;
+        outcomeDiv.innerHTML = `<span style="color:#2563eb;">관측점(${targetDist}km)은 <strong>교차 거리(${currentD}km) 이전</strong>입니다.</span> 직접파가 ${diff}초 일찍 도달합니다.`;
       } else {
         const diff = (tDirect - tRefract).toFixed(1);
-        outcomeDiv.innerHTML = `<span style="color:#dc2626;">⚡ 관측점(${targetDist}km)은 <strong>교차 거리(${currentD}km) 이후</strong>입니다.</span> 굴절파(${tRefract.toFixed(1)}초)가 직접파를 역전하여 ${diff}초 일찍 도달합니다.`;
+        outcomeDiv.innerHTML = `<span style="color:#dc2626;">관측점(${targetDist}km)은 <strong>교차 거리(${currentD}km) 이후</strong>입니다.</span> 굴절파가 직접파를 역전하여 ${diff}초 일찍 도달합니다.`;
       }
     }
 
     function drawSimulationFrame(t) {
-      const W = simCanvas.width;
-      const H = simCanvas.height;
+      const W = simCanvas.width; const H = simCanvas.height;
       simCtx.clearRect(0, 0, W, H);
-
       const scale = (W - 80) / 480; 
-      const startX = 50;
-      const startY = 35; 
-
+      const startX = 50, startY = 35;
       const d = currentThickness;
       const mohoY = startY + (d * scale);
 
-      simCtx.fillStyle = '#1e293b'; 
-      simCtx.fillRect(startX, startY, (W - 80), d * scale);
-      simCtx.fillStyle = '#0f172a'; 
-      simCtx.fillRect(startX, mohoY, (W - 80), H - mohoY);
+      simCtx.fillStyle = '#1e293b'; simCtx.fillRect(startX, startY, (W - 80), d * scale);
+      simCtx.fillStyle = '#0f172a'; simCtx.fillRect(startX, mohoY, (W - 80), H - mohoY);
 
-      simCtx.beginPath();
-      simCtx.strokeStyle = '#8b5cf6';
-      simCtx.lineWidth = 2;
-      simCtx.setLineDash([5, 4]);
-      simCtx.moveTo(startX, mohoY);
-      simCtx.lineTo(startX + (W - 80), mohoY);
-      simCtx.stroke();
-      simCtx.setLineDash([]);
+      simCtx.beginPath(); simCtx.strokeStyle = '#8b5cf6'; simCtx.lineWidth = 2; simCtx.setLineDash([5, 4]);
+      simCtx.moveTo(startX, mohoY); simCtx.lineTo(startX + (W - 80), mohoY); simCtx.stroke(); simCtx.setLineDash([]);
 
-      simCtx.strokeStyle = '#64748b';
-      simCtx.lineWidth = 2.5;
-      simCtx.beginPath();
-      simCtx.moveTo(startX, startY);
-      simCtx.lineTo(startX + (W - 80), startY);
-      simCtx.stroke();
+      simCtx.strokeStyle = '#64748b'; simCtx.lineWidth = 2.5; simCtx.beginPath();
+      simCtx.moveTo(startX, startY); simCtx.lineTo(startX + (W - 80), startY); simCtx.stroke();
 
-      simCtx.font = '11px sans-serif';
-      simCtx.fillStyle = '#94a3b8';
-      simCtx.fillText(`지각 (v₁ = ${currentV1.toFixed(1)} km/s)`, startX + 10, startY + 18);
-      simCtx.fillStyle = '#cbd5e1';
-      simCtx.fillText(`상부 맨틀 (v₂ = ${currentV2.toFixed(1)} km/s)`, startX + 10, mohoY + 20);
+      simCtx.font = '11px sans-serif'; simCtx.fillStyle = '#94a3b8'; simCtx.fillText(`지각 (v₁ = ${currentV1.toFixed(1)} km/s)`, startX + 10, startY + 18);
+      simCtx.fillStyle = '#cbd5e1'; simCtx.fillText(`상부 맨틀 (v₂ = ${currentV2.toFixed(1)} km/s)`, startX + 10, mohoY + 20);
 
-      simCtx.fillStyle = '#ef4444';
-      simCtx.beginPath(); simCtx.arc(startX, startY, 7, 0, Math.PI * 2); simCtx.fill();
-      simCtx.fillStyle = '#fca5a5'; simCtx.font = 'bold 12px sans-serif'; simCtx.fillText('진원지', startX - 16, startY - 12);
-
+      simCtx.fillStyle = '#ef4444'; simCtx.beginPath(); simCtx.arc(startX, startY, 7, 0, Math.PI * 2); simCtx.fill();
       const stationX = startX + targetDist * scale;
-      simCtx.fillStyle = '#38bdf8';
-      simCtx.beginPath(); simCtx.arc(stationX, startY, 7, 0, Math.PI * 2); simCtx.fill();
-      simCtx.fillStyle = '#7dd3fc'; simCtx.font = 'bold 12px sans-serif'; simCtx.fillText(`관측 지점 (${targetDist}km)`, stationX - 35, startY - 12);
+      simCtx.fillStyle = '#38bdf8'; simCtx.beginPath(); simCtx.arc(stationX, startY, 7, 0, Math.PI * 2); simCtx.fill();
 
-      const v1 = currentV1;
-      const v2 = currentV2;
+      const v1 = currentV1, v2 = currentV2;
       const ic = Math.asin(v1 / v2); 
-
       const xEntryKm = d * Math.tan(ic);
       const slantDistKm = d / Math.cos(ic);
       const tDown = slantDistKm / v1;
@@ -1570,24 +842,16 @@
       const dMantleKm = xExitKm - xEntryKm;
       const tMantle = dMantleKm / v2;
       const tUp = tDown;
-
       const distTravelKm = v1 * t;
 
       if (t > 0 && distTravelKm > 0) {
-        simCtx.save();
-        simCtx.beginPath();
-        simCtx.rect(startX, startY, (W - 80), d * scale);
-        simCtx.clip();
-
-        const ringOffsetsKm = [0, 8, 16]; 
-        ringOffsetsKm.forEach((offKm, idx) => {
+        simCtx.save(); simCtx.beginPath(); simCtx.rect(startX, startY, (W - 80), d * scale); simCtx.clip();
+        [0, 8, 16].forEach((offKm, idx) => {
           const rKm = distTravelKm - offKm;
           if (rKm > 0) {
-            simCtx.beginPath();
-            simCtx.arc(startX, startY, rKm * scale, 0, Math.PI);
+            simCtx.beginPath(); simCtx.arc(startX, startY, rKm * scale, 0, Math.PI);
             simCtx.strokeStyle = idx === 0 ? 'rgba(59, 130, 246, 0.85)' : `rgba(96, 165, 250, ${0.4 - idx * 0.15})`;
-            simCtx.lineWidth = idx === 0 ? 3 : 1.5;
-            simCtx.stroke();
+            simCtx.lineWidth = idx === 0 ? 3 : 1.5; simCtx.stroke();
           }
         });
         simCtx.restore();
@@ -1595,93 +859,57 @@
 
       if (t > 0) {
         if (t < tDown) {
-          simCtx.save();
-          simCtx.beginPath();
-          simCtx.rect(startX, startY, (W - 80), d * scale);
-          simCtx.clip();
-
-          const ringOffsetsKm = [0, 8, 16];
-          ringOffsetsKm.forEach((offKm, idx) => {
+          simCtx.save(); simCtx.beginPath(); simCtx.rect(startX, startY, (W - 80), d * scale); simCtx.clip();
+          [0, 8, 16].forEach((offKm, idx) => {
             const rKm = distTravelKm - offKm;
             if (rKm > 0) {
-              simCtx.beginPath();
-              simCtx.arc(startX, startY, rKm * scale, ic - 0.5, ic + 0.5);
+              simCtx.beginPath(); simCtx.arc(startX, startY, rKm * scale, ic - 0.5, ic + 0.5);
               simCtx.strokeStyle = idx === 0 ? 'rgba(239, 68, 68, 0.9)' : `rgba(252, 165, 165, ${0.45 - idx * 0.15})`;
-              simCtx.lineWidth = idx === 0 ? 3 : 1.5;
-              simCtx.stroke();
+              simCtx.lineWidth = idx === 0 ? 3 : 1.5; simCtx.stroke();
             }
           });
           simCtx.restore();
         } else {
           const mantleDistKm = v2 * (t - tDown);
           const currentMantleFrontXKm = xEntryKm + mantleDistKm;
-
-          simCtx.save();
-          simCtx.beginPath();
-          simCtx.rect(startX, mohoY, (W - 80), H - mohoY);
-          simCtx.clip();
-
-          const mRingsKm = [0, 10, 20];
-          mRingsKm.forEach((offKm, idx) => {
+          simCtx.save(); simCtx.beginPath(); simCtx.rect(startX, mohoY, (W - 80), H - mohoY); simCtx.clip();
+          [0, 10, 20].forEach((offKm, idx) => {
             const mrKm = mantleDistKm - offKm;
             if (mrKm > 0) {
-              simCtx.beginPath();
-              simCtx.arc(startX + xEntryKm * scale, mohoY, mrKm * scale, 0, Math.PI);
+              simCtx.beginPath(); simCtx.arc(startX + xEntryKm * scale, mohoY, mrKm * scale, 0, Math.PI);
               simCtx.strokeStyle = idx === 0 ? 'rgba(239, 68, 68, 0.85)' : `rgba(252, 165, 165, ${0.4 - idx * 0.15})`;
-              simCtx.lineWidth = idx === 0 ? 2.5 : 1.5;
-              simCtx.stroke();
+              simCtx.lineWidth = idx === 0 ? 2.5 : 1.5; simCtx.stroke();
             }
           });
           simCtx.restore();
 
-          simCtx.save();
-          simCtx.beginPath();
-          simCtx.rect(startX, startY, (W - 80), d * scale);
-          simCtx.clip();
-
-          const waveOffsetsKm = [0, 12, 24];
-          waveOffsetsKm.forEach((woffKm, idx) => {
+          simCtx.save(); simCtx.beginPath(); simCtx.rect(startX, startY, (W - 80), d * scale); simCtx.clip();
+          [0, 12, 24].forEach((woffKm, idx) => {
             const frontHeadXKm = currentMantleFrontXKm - woffKm;
             if (frontHeadXKm > xEntryKm) {
               simCtx.beginPath();
               simCtx.strokeStyle = idx === 0 ? 'rgba(248, 113, 113, 0.95)' : `rgba(252, 165, 165, ${0.45 - idx * 0.15})`;
               simCtx.lineWidth = idx === 0 ? 2.5 : 1.5;
-
               const topXKm = frontHeadXKm - (d / Math.tan(ic));
-              simCtx.moveTo(startX + frontHeadXKm * scale, mohoY);
-              simCtx.lineTo(startX + topXKm * scale, startY);
-              simCtx.stroke();
+              simCtx.moveTo(startX + frontHeadXKm * scale, mohoY); simCtx.lineTo(startX + topXKm * scale, startY); simCtx.stroke();
             }
           });
           simCtx.restore();
         }
       }
-
+      
       const directHeadXKm = Math.min(targetDist, distTravelKm);
-      simCtx.fillStyle = '#2563eb';
-      simCtx.beginPath(); simCtx.arc(startX + directHeadXKm * scale, startY, 6, 0, Math.PI * 2); simCtx.fill();
+      simCtx.fillStyle = '#2563eb'; simCtx.beginPath(); simCtx.arc(startX + directHeadXKm * scale, startY, 6, 0, Math.PI * 2); simCtx.fill();
       simCtx.strokeStyle = '#ffffff'; simCtx.lineWidth = 1.5; simCtx.stroke();
 
       let redXKm, redYKm;
-      if (t < tDown) {
-        redXKm = distTravelKm * Math.sin(ic);
-        redYKm = distTravelKm * Math.cos(ic);
-      } else if (t < tDown + tMantle) {
-        redXKm = xEntryKm + v2 * (t - tDown);
-        redYKm = d;
-      } else if (t < tDown + tMantle + tUp) {
-        const upDistKm = v1 * (t - tDown - tMantle);
-        redXKm = xExitKm + upDistKm * Math.sin(ic);
-        redYKm = d - upDistKm * Math.cos(ic);
-      } else {
-        redXKm = targetDist;
-        redYKm = 0;
-      }
+      if (t < tDown) { redXKm = distTravelKm * Math.sin(ic); redYKm = distTravelKm * Math.cos(ic); }
+      else if (t < tDown + tMantle) { redXKm = xEntryKm + v2 * (t - tDown); redYKm = d; }
+      else if (t < tDown + tMantle + tUp) { const upDistKm = v1 * (t - tDown - tMantle); redXKm = xExitKm + upDistKm * Math.sin(ic); redYKm = d - upDistKm * Math.cos(ic); }
+      else { redXKm = targetDist; redYKm = 0; }
 
-      simCtx.fillStyle = '#dc2626';
-      simCtx.beginPath(); simCtx.arc(startX + redXKm * scale, startY + redYKm * scale, 6, 0, Math.PI * 2); simCtx.fill();
+      simCtx.fillStyle = '#dc2626'; simCtx.beginPath(); simCtx.arc(startX + redXKm * scale, startY + redYKm * scale, 6, 0, Math.PI * 2); simCtx.fill();
       simCtx.strokeStyle = '#ffffff'; simCtx.lineWidth = 1.5; simCtx.stroke();
-
       document.getElementById('simTimer').innerText = `시뮬레이션 시간: ${t.toFixed(1)} 초`;
     }
 
@@ -1689,139 +917,35 @@
       if (!simIsPlaying) return;
       simCurrentTime += 0.28;
       const tMax = Math.max(targetDist / currentV1, (targetDist / currentV2) + 20) + 2.5;
-
-      if (simCurrentTime > tMax) {
-        simIsPlaying = false;
-        simCurrentTime = 0;
-        document.getElementById('btnPlaySim').innerText = '재생';
-        drawSimulationFrame(0);
-        return;
-      }
-
+      if (simCurrentTime > tMax) { simIsPlaying = false; simCurrentTime = 0; document.getElementById('btnPlaySim').innerText = '재생'; drawSimulationFrame(0); return; }
       drawSimulationFrame(simCurrentTime);
-      if (simIsPlaying) {
-        simAnimationId = requestAnimationFrame(simStep);
-      }
+      simAnimationId = requestAnimationFrame(simStep);
     }
-
     function toggleSim() {
-      simIsPlaying = !simIsPlaying;
-      document.getElementById('btnPlaySim').innerText = simIsPlaying ? '일시정지' : '재생';
+      simIsPlaying = !simIsPlaying; document.getElementById('btnPlaySim').innerText = simIsPlaying ? '일시정지' : '재생';
       if (simIsPlaying) simStep();
     }
 
-    /* =========================================================================
-       데이터 제출
-       ========================================================================= */
-    function submitTab1Answers() {
-      const q1 = document.getElementById('tab1_q1').value.trim();
-      const q2 = document.getElementById('tab1_q2').value.trim();
-      const statusSpan = document.getElementById('tab1_status');
+    let leafletMap = null, stationCircles = [];
+    const focalDepthH = 48.0;
+    const geoStations = { A: { lat: 37.4563, lng: 126.7052, color: "#2563eb" }, B: { lat: 35.1796, lng: 129.0756, color: "#9333ea" }, C: { lat: 35.1595, lng: 126.8526, color: "#16a34a" } };
 
-      if (!q1 || !q2) { alert("1번과 2번 질문에 대한 답변을 모두 작성해 주세요."); return; }
-      if (GAS_ENDPOINT) {
-        statusSpan.style.color = "var(--primary-light)"; statusSpan.innerText = "저장 중...";
-        fetch(GAS_ENDPOINT, {
-          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submitTab1', studentId: currentStudentId, q1: q1, q2: q2 })
-        }).then(() => {
-          statusSpan.style.color = "var(--success)"; statusSpan.innerText = "✓ 성공적으로 제출되었습니다!";
-        }).catch(err => {
-          statusSpan.style.color = "var(--accent)"; statusSpan.innerText = "제출 오류 발생";
-        });
-      } else {
-        alert("교사용 Web App URL이 설정되지 않아 브라우저에 임시 저장되었습니다.");
-        statusSpan.style.color = "var(--success)"; statusSpan.innerText = "✓ 로컬 저장 완료";
-      }
-    }
-
-    function submitTab2Answers() {
-      const q1 = document.getElementById('tab2_q1').value.trim();
-      const q2 = document.getElementById('tab2_q2').value.trim();
-      const q3 = document.getElementById('tab2_q3').value.trim();
-      const statusSpan = document.getElementById('tab2_status');
-
-      if (!q1 || !q2 || !q3) { alert("3가지 질문에 대한 답변을 모두 작성해 주세요."); return; }
-      if (GAS_ENDPOINT) {
-        statusSpan.style.color = "var(--primary-light)"; statusSpan.innerText = "저장 중...";
-        fetch(GAS_ENDPOINT, {
-          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submitTab2', studentId: currentStudentId, q1: q1, q2: q2, q3: q3 })
-        }).then(() => {
-          statusSpan.style.color = "var(--success)"; statusSpan.innerText = "✓ 성공적으로 제출되었습니다!";
-        }).catch(err => {
-          statusSpan.style.color = "var(--accent)"; statusSpan.innerText = "제출 오류 발생";
-        });
-      } else {
-        alert("교사용 Web App URL이 설정되지 않아 브라우저에 임시 저장되었습니다.");
-        statusSpan.style.color = "var(--success)"; statusSpan.innerText = "✓ 로컬 저장 완료";
-      }
-    }
-
-    function handleImageUpload(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          uploadedImageBase64 = evt.target.result;
-          const preview = document.getElementById('imagePreview');
-          preview.src = uploadedImageBase64;
-          preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function submitTab3Answers() {
-      const q2 = document.getElementById('tab3_q2').value.trim();
-      const statusSpan = document.getElementById('tab3_status');
-
-      if (!uploadedImageBase64) { alert("진앙을 표시한 이미지를 첨부해 주세요."); return; }
-      if (!q2) { alert("2번 진원 깊이 풀이 과정을 작성해 주세요."); return; }
-
-      if (GAS_ENDPOINT) {
-        statusSpan.style.color = "var(--primary-light)"; statusSpan.innerText = "저장 중...";
-        fetch(GAS_ENDPOINT, {
-          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'submitTab3', studentId: currentStudentId, imageBase64: uploadedImageBase64, q2_depth: q2 })
-        }).then(() => {
-          statusSpan.style.color = "var(--success)"; statusSpan.innerText = "✓ 성공적으로 제출되었습니다!";
-        }).catch(err => {
-          statusSpan.style.color = "var(--accent)"; statusSpan.innerText = "제출 오류 발생";
-        });
-      } else {
-        alert("교사용 Web App URL이 설정되지 않아 브라우저에 임시 저장되었습니다.");
-        statusSpan.style.color = "var(--success)"; statusSpan.innerText = "✓ 로컬 저장 완료";
-      }
-    }
-
-    function autoResize(textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = textarea.scrollHeight + 'px';
-    }
-
-    /* =========================================================================
-       지도 작도 (3번 탭)
-       ========================================================================= */
     function initLeafletMap() {
       if (leafletMap) return;
       leafletMap = L.map('map', { preferCanvas: true }).setView([36.3, 127.9], 7);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18, crossOrigin: true, attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(leafletMap);
-
-      Object.values(geoStations).forEach(st => {
-        L.circleMarker([st.lat, st.lng], { radius: 8, fillColor: st.color, color: "#ffffff", weight: 2, fillOpacity: 0.95 }).addTo(leafletMap).bindPopup(`<b>${st.name}</b>`);
-      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true }).addTo(leafletMap);
+      
+      L.circleMarker([geoStations.A.lat, geoStations.A.lng], { radius:6, color:geoStations.A.color, fillOpacity:1 }).addTo(leafletMap).bindTooltip("A(인천)");
+      L.circleMarker([geoStations.B.lat, geoStations.B.lng], { radius:6, color:geoStations.B.color, fillOpacity:1 }).addTo(leafletMap).bindTooltip("B(부산)");
+      L.circleMarker([geoStations.C.lat, geoStations.C.lng], { radius:6, color:geoStations.C.color, fillOpacity:1 }).addTo(leafletMap).bindTooltip("C(광주)");
     }
-
-    function onStationSelectionChange() { resetMapCircles(); }
-
+    
     function drawEpicenterCircles() {
-      resetMapCircles();
+      stationCircles.forEach(c => leafletMap.removeLayer(c)); stationCircles = [];
       const idA = parseInt(document.getElementById('selectIncheon').value);
       const idB = parseInt(document.getElementById('selectBusan').value);
       const idC = parseInt(document.getElementById('selectGwangju').value);
+      
       const stA_data = rawStations.find(s => s.id === idA);
       const stB_data = rawStations.find(s => s.id === idB);
       const stC_data = rawStations.find(s => s.id === idC);
@@ -1831,44 +955,26 @@
       const RB = Math.sqrt(dB * dB + focalDepthH * focalDepthH);
       const RC = Math.sqrt(dC * dC + focalDepthH * focalDepthH);
 
-      const activeStations = [
-        { ...geoStations.A, d: dA, R: RA }, { ...geoStations.B, d: dB, R: RB }, { ...geoStations.C, d: dC, R: RC }
-      ];
-
+      const activeStations = [ { ...geoStations.A, R: RA }, { ...geoStations.B, R: RB }, { ...geoStations.C, R: RC } ];
       activeStations.forEach(st => {
         const circle = L.circle([st.lat, st.lng], { radius: st.R * 1000, color: st.color, fillColor: st.color, fillOpacity: 0.12, weight: 2.8 }).addTo(leafletMap);
         stationCircles.push(circle);
       });
     }
 
-    function resetMapCircles() { stationCircles.forEach(c => leafletMap.removeLayer(c)); stationCircles = []; }
-
     function saveMapAsImage() {
       const mapElement = document.getElementById('map');
-      const saveBtn = document.querySelector('button[onclick="saveMapAsImage()"]');
-      const originalText = saveBtn.innerText;
-      saveBtn.innerText = "⏳ 캡처 생성 중..."; saveBtn.disabled = true;
-
       html2canvas(mapElement, { useCORS: true, allowTaint: false, scale: 2 }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `지진파_진원거리_작도지도_${currentStudentId || '학생'}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+        link.download = `지진파_지도_${currentStudentId || '캡처'}.png`;
+        link.href = canvas.toDataURL("image/png"); link.click();
       }).catch(err => {
-        console.error("캡처 오류:", err); alert("지도 캡처 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-      }).finally(() => {
-        saveBtn.innerText = originalText; saveBtn.disabled = false;
+        console.error(err); alert("지도 캡처 중 오류가 발생했습니다.");
       });
     }
 
-    /* 초기화 실행 */
     window.addEventListener('DOMContentLoaded', () => {
-      renderTable();
-      initChart();
-      initTab1Chart();
-      initLeafletMap();
-      updateAllModels();
-      drawSimulationFrame(0);
+      renderTable(); initTab1Chart(); initChart(); initLeafletMap(); updateAllModels();
     });
   </script>
 </body>
