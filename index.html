@@ -644,21 +644,21 @@
       const element = document.getElementById('pdf-content');
       
       const opt = {
-        margin: [15, 15, 15, 15], 
+      // BUG FIX: 여백을 1.5cm(15mm)로 맞추고, 왼쪽 여백을 약간 넓혀 오른쪽으로 내용을 이동
+      const opt = {
+        margin: [15, 15, 15, 20], 
         filename: `지구시스템과학_보고서_${sId}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
           scale: 2, 
           useCORS: true, 
-          scrollX: 0, 
-          scrollY: 0, 
-          x: 0, // 강제로 캡처 시작 X좌표를 0으로 고정
-          y: 0, // 강제로 캡처 시작 Y좌표를 0으로 고정
+          scrollX: 0, // 강제로 현재 스크롤 위치를 0으로 초기화
+          scrollY: 0, // 강제로 현재 스크롤 위치를 0으로 초기화
           windowWidth: 1200 
         },
         jsPDF: { 
           unit: 'mm', 
-          format: 'a4', 
+          format: 'b4', 
           orientation: 'landscape' 
         },
         pagebreak: { mode: ['css', 'legacy'] } 
