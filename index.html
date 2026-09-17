@@ -634,52 +634,53 @@
       const noImgEl = document.getElementById('pdf-t3-noimg');
       if (ans.t3_img && ans.t3_img.startsWith('data:image')) {
         imgEl.src = ans.t3_img;
+        imgEl.onload = () => {
+          generatePDF();
+        };
         imgEl.style.display = 'inline-block';
         noImgEl.style.display = 'none';
       } else {
         imgEl.style.display = 'none';
         noImgEl.style.display = 'block';
+        generatePDF();
       }
 
-      const element = document.getElementById('pdf-content');
-      
-      const opt = {
-      // BUG FIX: 여백을 1.5cm(15mm)로 맞추고, 왼쪽 여백을 약간 넓혀 오른쪽으로 내용을 이동
-      const opt = {
-        margin: [15, 15, 15, 20], 
-        filename: `지구시스템과학_보고서_${sId}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
-          scrollX: 0, // 강제로 현재 스크롤 위치를 0으로 초기화
-          scrollY: 0, // 강제로 현재 스크롤 위치를 0으로 초기화
-          windowWidth: 1200 
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'b4', 
-          orientation: 'landscape' 
-        },
-        pagebreak: { mode: ['css', 'legacy'] } 
-      };
-      
-      alert(`${sId} 학생의 PDF 생성을 시작합니다. 잠시만 기다려주세요.`);
+      function generatePDF() {
+        const element = document.getElementById('pdf-content');
+        
+        const opt = {
+          margin: [15, 15, 15, 20], 
+          filename: `지구시스템과학_보고서_${sId}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            scrollX: 0, 
+            scrollY: 0, 
+            windowWidth: 1200 
+          },
+          jsPDF: { 
+            unit: 'mm', 
+            format: 'b4', 
+            orientation: 'landscape' 
+          },
+          pagebreak: { mode: ['css', 'legacy'] } 
+        };
+        
+        alert(`${sId} 학생의 PDF 생성을 시작합니다. 잠시만 기다려주세요.`);
 
-      // [핵심 해결책] 스크롤 위치에 따른 캡처 잘림 방지를 위해 스크롤 임시 초기화
-      const originalScrollY = window.scrollY;
-      const originalScrollX = window.scrollX;
-      window.scrollTo(0, 0);
+        const originalScrollY = window.scrollY;
+        const originalScrollX = window.scrollX;
+        window.scrollTo(0, 0);
 
-      // 컨테이너 잠시 활성화
-      const container = document.getElementById('pdf-template-container');
-      container.style.opacity = '1';
+        const container = document.getElementById('pdf-template-container');
+        container.style.opacity = '1';
 
-      html2pdf().set(opt).from(element).save().then(() => {
-        // 완료 후 상태 복구
-        container.style.opacity = '0.01';
-        window.scrollTo(originalScrollX, originalScrollY);
-      });
+        html2pdf().set(opt).from(element).save().then(() => {
+          container.style.opacity = '0.01';
+          window.scrollTo(originalScrollX, originalScrollY);
+        });
+      }
     }
 
     function handleImageUpload(e) {
