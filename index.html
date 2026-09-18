@@ -112,7 +112,7 @@
       font-family: sans-serif; 
       color: #1e293b; 
       line-height: 1.6; 
-      padding: 20 20 20 581px; /* 내부 여백 최소화, 여백은 jsPDF 옵션에서 mm 단위로 직접 제어 */
+      padding: 10px; /* 내부 여백 최소화, 여백은 jsPDF 옵션에서 mm 단위로 직접 제어 */
       box-sizing: border-box;
     }
     
@@ -684,6 +684,8 @@
             useCORS: true, 
             scrollX: 0, 
             scrollY: 0, 
+            x: 0, // 강제로 0,0 좌표에서 캡처 시작 (가장 핵심적인 왼쪽 잘림 방지 코드)
+            y: 0,
             windowWidth: 1122 // CSS 컨테이너와 동일한 너비 지정하여 잘림 원천 차단
           },
           jsPDF: { 
